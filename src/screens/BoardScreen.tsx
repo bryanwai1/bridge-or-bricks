@@ -1,4 +1,4 @@
-import { useRef, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import HexBoard, { type BoardHandle, type BoardSelection } from "../components/HexBoard";
 import CardReveal, { type RevealOrigin } from "../components/CardReveal";
 import CardRing from "../components/CardRing";
@@ -38,18 +38,75 @@ export default function BoardScreen() {
   const [orbit, setOrbit] = useState(false);
   const [sky, setSky] = useState(() => localStorage.getItem("bob-sky") ?? "assets/sky.webp");
 
+  /* Camera feel. The old gains spun the board out from under the pointer,
+     and every single pointermove wrote the pitch to localStorage — a
+     synchronous disk write per frame, which is most of why dragging felt
+     like it was catching on something. */
+  const ROT_GAIN = 0.17;   // deg of spin per px of drag  (was 0.26)
+  const TILT_GAIN = 0.11;  // deg of pitch per px of drag (was 0.17)
+  const TILT_MIN = 0;
+  const TILT_MAX = 68;
+  const clampTilt = (v: number) => Math.max(TILT_MIN, Math.min(TILT_MAX, v));
+
+  const vel = useRef({ rx: 0, ry: 0 });
+  const fling = useRef(0);
+  const settle = useRef(0);
+
+  /** Let go and the camera keeps going, then eases to a stop. */
+  const startFling = () => {
+    cancelAnimationFrame(fling.current);
+    const step = () => {
+      const v = vel.current;
+      v.rx *= 0.9;
+      v.ry *= 0.9;
+      let alive = false;
+      if (Math.abs(v.rx) > 0.03) {
+        alive = true;
+        setRotation((r) => (r + v.rx + 360) % 360);
+      }
+      if (Math.abs(v.ry) > 0.03) {
+        alive = true;
+        setTilt((t) => clampTilt(t + v.ry));
+      }
+      if (alive) fling.current = requestAnimationFrame(step);
+      else vel.current = { rx: 0, ry: 0 };
+    };
+    fling.current = requestAnimationFrame(step);
+  };
+
   /** Drag deltas from the board: sideways spins, vertical drops the camera. */
   const onOrbit = (dx: number, dy: number) => {
     cancelAnimationFrame(anim.current);
-    if (dx) setRotation((r) => (r + dx * 0.26 + 360) % 360);
-    if (dy) {
-      setTilt((t) => {
-        const next = Math.max(0, Math.min(68, t + dy * 0.17));
-        localStorage.setItem("bob-tilt", String(Math.round(next)));
-        return next;
-      });
+    cancelAnimationFrame(fling.current);
+    if (dx) {
+      vel.current.rx = dx * ROT_GAIN;
+      setRotation((r) => (r + dx * ROT_GAIN + 360) % 360);
     }
+    if (dy) {
+      vel.current.ry = dy * TILT_GAIN;
+      setTilt((t) => clampTilt(t + dy * TILT_GAIN));
+    }
+    // no more deltas for a moment means the finger left the glass
+    window.clearTimeout(settle.current);
+    settle.current = window.setTimeout(startFling, 70);
   };
+
+  /* persist the pitch once the camera stops, not sixty times a second */
+  useEffect(() => {
+    const id = window.setTimeout(
+      () => localStorage.setItem("bob-tilt", String(Math.round(tilt))),
+      450,
+    );
+    return () => window.clearTimeout(id);
+  }, [tilt]);
+
+  useEffect(
+    () => () => {
+      cancelAnimationFrame(fling.current);
+      window.clearTimeout(settle.current);
+    },
+    [],
+  );
 
   /* Camera moves are eased in JS, not CSS. A CSS transition would animate only
      the SVG mat while the WebGL layers snap, and the two would visibly part
@@ -205,7 +262,7 @@ export default function BoardScreen() {
         </button>
         <span className="muted small">
           {orbit
-            ? "Drag to spin · drag up and down to raise or lower the camera"
+            ? "Drag to spin · up and down raises or lowers the camera · double-click to reset"
             : wallMode
               ? "Tap a gap between tiles to build or clear a wall"
               : canEditBoard
@@ -214,7 +271,10 @@ export default function BoardScreen() {
         </span>
       </div>
 
-      <div className="board-wrap">
+      <div
+        className="board-wrap"
+        onDoubleClick={() => { sfx.tap(); boardRef.current?.fitBoard(); glide(0, 0); }}
+      >
         <HexBoard
           ref={boardRef}
           state={state}

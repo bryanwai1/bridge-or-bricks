@@ -728,3 +728,277 @@ input.team-name{
   *,*::before,*::after{animation-duration:.01ms!important;transition-duration:.01ms!important}
   .rise{opacity:1;transform:none}
 }
+
+/* ============================================================
+   FIX ROUND 13
+   1. Projector layout — ProjectorScreen was rewritten with new
+      class names (.proj-stage, .pteam, .pgate, .proj-feed) and
+      no CSS was ever written for them. The board collapsed to
+      zero height and the panel stacked as raw text.
+   2. Game-mode background — .board-3d painted an opaque table
+      gradient straight over the forest backdrop.
+   3. Camera affordances.
+   ============================================================ */
+
+html{background:var(--bg)}
+
+/* ---------- 1 · THE ROOM-FACING DISPLAY ---------- */
+
+.projector-mode{
+  position:fixed;
+  inset:0;
+  z-index:40;
+  background:var(--bg);
+}
+.float-exit{
+  position:fixed;
+  left:14px;
+  top:14px;
+  z-index:60;
+  opacity:.28;
+  transition:opacity .2s var(--ease);
+}
+.float-exit:hover,.float-exit:focus-visible{opacity:1}
+
+.proj{
+  display:grid;
+  grid-template-columns:minmax(0,1fr) clamp(290px,21vw,400px);
+  gap:14px;
+  height:100%;
+  padding:14px;
+  background:var(--bg);
+  overflow:hidden;
+}
+.proj-stage{
+  position:relative;
+  display:flex;
+  min-width:0;
+  min-height:0;
+  border:1px solid var(--line);
+  border-radius:var(--radius);
+  overflow:hidden;
+}
+.proj-stage .board-3d{flex:1;border-radius:0}
+.proj-vignette{
+  position:absolute;
+  inset:0;
+  z-index:4;
+  pointer-events:none;
+  background:radial-gradient(ellipse at 50% 46%,transparent 42%,rgba(0,0,0,.5) 88%,rgba(0,0,0,.78) 100%);
+}
+
+.proj-title{
+  position:absolute;
+  top:clamp(14px,2.2vh,30px);
+  left:clamp(16px,2vw,36px);
+  z-index:6;
+  display:flex;
+  flex-direction:column;
+  gap:2px;
+  pointer-events:none;
+}
+.proj-title h1{
+  margin:0;
+  font-size:clamp(1.5rem,2.9vw,3rem);
+  line-height:1.05;
+}
+.proj-act{
+  font-family:var(--body);
+  font-size:clamp(.7rem,1vw,1rem);
+  letter-spacing:.22em;
+  text-transform:uppercase;
+  color:var(--act,var(--accent));
+  text-shadow:0 2px 12px #000;
+}
+/* the label is already text in the span — kill the duplicate */
+.proj-act::after{content:none}
+
+.proj-turn{
+  position:absolute;
+  left:clamp(16px,2vw,36px);
+  bottom:clamp(16px,2.4vh,34px);
+  z-index:6;
+  display:flex;
+  flex-direction:column;
+  gap:1px;
+  padding:10px 20px;
+  border-left:6px solid var(--team,var(--accent));
+  border-radius:4px 14px 14px 4px;
+  background:linear-gradient(90deg,rgba(0,0,0,.72),rgba(0,0,0,.34));
+  backdrop-filter:blur(8px);
+  -webkit-backdrop-filter:blur(8px);
+  pointer-events:none;
+  max-width:52%;
+}
+.proj-turn-label{
+  font-size:clamp(.62rem,.82vw,.85rem);
+  letter-spacing:.2em;
+  text-transform:uppercase;
+  color:var(--muted);
+}
+.proj-turn b{
+  font-family:var(--display);
+  font-size:clamp(1.4rem,3.1vw,3.1rem);
+  line-height:1.06;
+  color:var(--team,var(--accent-2));
+  text-shadow:0 3px 20px #000;
+}
+.proj-next{
+  font-size:clamp(.66rem,.9vw,.95rem);
+  letter-spacing:.12em;
+  text-transform:uppercase;
+  color:var(--muted);
+}
+.proj-turn.planning b{color:var(--accent-2)}
+
+.proj-ctl{
+  position:absolute;
+  right:12px;
+  bottom:14px;
+  z-index:8;
+  display:flex;
+  align-items:center;
+  gap:8px;
+  padding:8px 10px;
+  border:1px solid var(--line);
+  border-radius:999px;
+  background:rgba(0,0,0,.5);
+  backdrop-filter:blur(10px);
+  -webkit-backdrop-filter:blur(10px);
+  opacity:.3;
+  transition:opacity .25s var(--ease);
+}
+.proj-stage:hover .proj-ctl,.proj-ctl:focus-within{opacity:1}
+.proj-ctl .bctl{width:38px;height:38px;font-size:18px}
+.bctl.on{border-color:var(--accent);color:var(--accent-2)}
+.proj-tilt{width:110px;accent-color:var(--accent)}
+
+/* ---------- the side panel ---------- */
+
+.proj-side{
+  display:flex;
+  flex-direction:column;
+  gap:12px;
+  min-height:0;
+  padding:14px;
+  overflow:auto;
+}
+.proj-teams{display:flex;flex-direction:column;gap:8px}
+
+.pteam{
+  display:flex;
+  flex-direction:column;
+  gap:5px;
+  padding:9px 11px;
+  border-left:5px solid var(--team,var(--accent));
+  border-radius:4px 12px 12px 4px;
+  background:var(--plaque-2);
+  transition:transform .25s var(--ease),box-shadow .25s var(--ease);
+}
+.pteam.live{
+  transform:translateX(3px);
+  background:linear-gradient(90deg,color-mix(in srgb,var(--team,#888) 22%,transparent),transparent 72%);
+  box-shadow:0 0 0 1px var(--team,var(--accent)),0 8px 26px rgba(0,0,0,.5);
+}
+.pteam-head{display:flex;align-items:baseline;justify-content:space-between;gap:8px}
+.pteam-head b{
+  font-family:var(--display);
+  font-size:clamp(.95rem,1.15vw,1.3rem);
+  letter-spacing:.03em;
+}
+.pteam-net{
+  font-family:var(--mono);
+  font-size:clamp(.9rem,1.1vw,1.25rem);
+  font-weight:700;
+}
+.pteam-net.safe,.pteam-net.low{color:var(--good)}
+.pteam-net.moderate{color:var(--accent)}
+.pteam-net.high,.pteam-net.critical{color:var(--danger)}
+.pteam-res{
+  display:flex;
+  align-items:center;
+  gap:10px;
+  font-family:var(--mono);
+  font-size:clamp(.8rem,.95vw,1.05rem);
+  color:var(--text);
+}
+.pteam-act{margin-left:auto;letter-spacing:2px;color:var(--good)}
+.pteam-act i{color:#7A3A38;font-style:normal}
+.pteam-warn{font-size:.74rem;letter-spacing:.05em;color:var(--danger)}
+
+.proj-gates{display:grid;grid-template-columns:repeat(3,1fr);gap:8px}
+.pgate{
+  display:flex;
+  flex-direction:column;
+  align-items:center;
+  gap:2px;
+  padding:9px 4px;
+  border:1px solid var(--line);
+  border-radius:12px;
+  background:var(--plaque-2);
+  text-align:center;
+}
+.pgate span{
+  font-size:.62rem;
+  letter-spacing:.14em;
+  text-transform:uppercase;
+  color:var(--muted);
+}
+.pgate b{
+  font-family:var(--mono);
+  font-size:clamp(1rem,1.5vw,1.6rem);
+  line-height:1;
+}
+.pgate b i{font-style:normal;font-size:.6em;color:var(--muted)}
+.pgate.open{border-color:var(--accent-dim)}
+.pgate.open b{color:var(--accent)}
+.pgate.gold{
+  border-color:var(--accent);
+  box-shadow:0 0 22px rgba(227,178,74,.28) inset;
+}
+.pgate.gold b{color:var(--accent-2)}
+
+.proj-feed{
+  display:flex;
+  flex-direction:column;
+  gap:5px;
+  min-height:0;
+  padding-top:10px;
+  border-top:1px solid var(--line);
+  overflow:auto;
+}
+.proj-feed p{
+  margin:0;
+  font-size:.78rem;
+  line-height:1.35;
+  color:var(--muted);
+}
+.proj-feed p:first-child{color:var(--text)}
+
+@media (max-width:900px){
+  .proj{grid-template-columns:1fr;grid-template-rows:minmax(0,1.35fr) minmax(0,1fr)}
+}
+
+/* ---------- 2 · LET THE WORLD THROUGH IN GAME MODE ---------- */
+
+/* fx.css painted an opaque table gradient here, which sat on top of
+   the Backdrop canvas and hid the forest on the Board tab. */
+.board-3d{
+  background:
+    radial-gradient(ellipse at 50% 66%,
+      rgba(0,0,0,.20) 0%,
+      rgba(0,0,0,.46) 58%,
+      rgba(0,0,0,.70) 100%);
+}
+.board-screen .board-3d{border:1px solid var(--line)}
+/* with the 360 world on, the sky is the background */
+.board-3d[data-sky="1"]{background:transparent}
+/* the mat itself must never sit on a slab */
+.hexboard,.board-3d .hexboard{background:transparent}
+
+/* ---------- 3 · CAMERA AFFORDANCES ---------- */
+
+.board-3d{cursor:grab}
+.board-3d[data-drag="1"]{cursor:grabbing}
+.board-3d[data-orbit="1"]{cursor:move}
+.board-toolbar .chip.active{box-shadow:0 0 0 1px var(--accent)}

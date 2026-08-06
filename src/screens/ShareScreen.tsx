@@ -1,14 +1,20 @@
 import { useEffect, useState } from "react";
 import QRCode from "qrcode";
 import { RELAY_PORT, useStore } from "../state/store";
+import { isCloudHosted, joinUrl, serviceUrl } from "../net";
 
 export default function ShareScreen() {
   const { state } = useStore();
   const [ip, setIp] = useState<string | null>(null);
   const [qrs, setQrs] = useState<Record<string, string>>({});
 
+  const cloud = isCloudHosted();
+
   useEffect(() => {
-    fetch(`http://${location.hostname}:${RELAY_PORT}/info`)
+    // hosted in the cloud, this origin already reaches every phone — there is
+    // no LAN address to look up
+    if (cloud) return;
+    fetch(`${serviceUrl(RELAY_PORT, "http")}/info`)
       .then((r) => r.json())
       .then((info: { ips: string[] }) => {
         const best =
@@ -19,36 +25,47 @@ export default function ShareScreen() {
         setIp(best);
       })
       .catch(() => setIp(location.hostname));
-  }, []);
+  }, [cloud]);
 
   useEffect(() => {
-    if (!ip) return;
+    if (!cloud && !ip) return;
     let alive = true;
     (async () => {
       const out: Record<string, string> = {};
       for (const tid of state.teamOrder) {
-        const url = `http://${ip}:${location.port || "5199"}/?team=${tid}`;
-        out[tid] = await QRCode.toDataURL(url, { width: 360, margin: 1 });
+        out[tid] = await QRCode.toDataURL(joinUrl(tid, ip), { width: 360, margin: 1 });
       }
       if (alive) setQrs(out);
     })();
     return () => {
       alive = false;
     };
-  }, [ip, state.teamOrder]);
+  }, [cloud, ip, state.teamOrder]);
 
   return (
     <div className="stack">
       <div className="card">
         <b>📱 Team join QR codes</b>
         <p className="muted small">
-          Players connect to the same wifi/hotspot as this computer, scan their team's QR,
-          enter the team PIN, and pick a role. Their devices stay live-synced with this
-          board and the projector.
+          {cloud
+            ? "Hosted in the cloud — players scan their team's QR from any network, including mobile data. No shared wifi needed."
+            : "Players connect to the same wifi/hotspot as this computer, scan their team's QR, enter the team PIN, and pick a role. Their devices stay live-synced with this board and the projector."}
         </p>
-        {ip && (
+        {cloud ? (
           <p className="small">
-            Host: <code>http://{ip}:{location.port || "5199"}</code>
+            Host: <code>{location.origin}</code>
+          </p>
+        ) : (
+          ip && (
+            <p className="small">
+              Host: <code>http://{ip}:{location.port || "5173"}</code>
+            </p>
+          )
+        )}
+        {cloud && (
+          <p className="rv-tag">
+            ⚠️ Set both forwarded ports (5173 and 5200) to <b>Public</b> in the Ports tab,
+            or phones will hit a GitHub sign-in wall.
           </p>
         )}
       </div>
@@ -68,8 +85,10 @@ export default function ShareScreen() {
         })}
       </div>
       <p className="muted small">
-        Show this screen to the room (or each team privately for PINs). Different-wifi /
-        mobile-data play needs the cloud sync upgrade (Firebase) — planned next.
+        Show this screen to the room, or each team privately for their PIN.
+        {cloud
+          ? " Running in the cloud already gives you cross-network play, so the Firebase upgrade is no longer needed for this."
+          : " Different-wifi / mobile-data play works out of the box when the app is hosted in the cloud."}
       </p>
     </div>
   );

@@ -75,7 +75,7 @@ const HexBoard = forwardRef<BoardHandle, Props>(function HexBoard(
   const [box, setBox] = useState({ w: 0, h: 0 });
   const drag = useRef<{ x: number; y: number; vx: number; vy: number; orbit: boolean } | null>(null);
   const pointers = useRef<Map<number, { x: number; y: number }>>(new Map());
-  const gesture = useRef<{ dist: number; angle: number } | null>(null);
+  const gesture = useRef<{ dist: number; angle: number; midY: number } | null>(null);
 
   /* keep the real box size so the camera can fit the board to the frame */
   useEffect(() => {
@@ -193,7 +193,7 @@ const HexBoard = forwardRef<BoardHandle, Props>(function HexBoard(
   const downPos = useRef({ x: 0, y: 0 });
 
   const onPointerDown = (e: React.PointerEvent) => {
-    (e.target as Element).setPointerCapture?.(e.pointerId);
+    (e.currentTarget as Element).setPointerCapture?.(e.pointerId);
     pointers.current.set(e.pointerId, { x: e.clientX, y: e.clientY });
     movedRef.current = false;
     downPos.current = { x: e.clientX, y: e.clientY };
@@ -210,6 +210,7 @@ const HexBoard = forwardRef<BoardHandle, Props>(function HexBoard(
       gesture.current = {
         dist: Math.hypot(a.x - b.x, a.y - b.y),
         angle: (Math.atan2(b.y - a.y, b.x - a.x) * 180) / Math.PI,
+        midY: (a.y + b.y) / 2,
       };
     }
   };
@@ -227,6 +228,7 @@ const HexBoard = forwardRef<BoardHandle, Props>(function HexBoard(
       const [a, b] = [...pointers.current.values()];
       const dist = Math.hypot(a.x - b.x, a.y - b.y);
       const angle = (Math.atan2(b.y - a.y, b.x - a.x) * 180) / Math.PI;
+      const midY = (a.y + b.y) / 2;
       if (gesture.current) {
         const ratio = gesture.current.dist / Math.max(1, dist);
         if (Math.abs(1 - ratio) > 0.004) {
@@ -240,9 +242,14 @@ const HexBoard = forwardRef<BoardHandle, Props>(function HexBoard(
         let dA = angle - gesture.current.angle;
         if (dA > 180) dA -= 360;
         if (dA < -180) dA += 360;
-        if (Math.abs(dA) > 0.4) onOrbit?.(dA * 2.6, 0);
+        // twist was geared 2.6x and spun away from under your fingers
+        if (Math.abs(dA) > 0.6) onOrbit?.(dA * 1.05, 0);
+        // both fingers sliding up or down pitches the camera, the way every
+        // map app behaves. Before this the only way to tilt was the slider.
+        const dY = midY - gesture.current.midY;
+        if (Math.abs(dY) > 0.6) onOrbit?.(0, dY);
       }
-      gesture.current = { dist, angle };
+      gesture.current = { dist, angle, midY };
       movedRef.current = true;
       return;
     }
@@ -285,7 +292,7 @@ const HexBoard = forwardRef<BoardHandle, Props>(function HexBoard(
   const dragging = pointers.current.size > 0;
 
   return (
-    <div className="board-3d" ref={wrapRef} data-tilted={tilted ? "1" : undefined} data-sky={sky ? "1" : undefined} data-drag={dragging ? "1" : undefined}>
+    <div className="board-3d" ref={wrapRef} data-tilted={tilted ? "1" : undefined} data-sky={sky ? "1" : undefined} data-drag={dragging ? "1" : undefined} data-orbit={orbitMode ? "1" : undefined}>
       {sky && (
         <Sky360
           src={sky}

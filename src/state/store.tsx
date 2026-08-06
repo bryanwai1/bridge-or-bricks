@@ -11,6 +11,7 @@ import {
 } from "react";
 import type { DerivedState, EventType, GameEvent, RoleType, SessionFile, Visibility } from "../types";
 import { reduceEvents } from "./reduce";
+import { serviceUrl } from "../net";
 
 const STORAGE_KEY = "bob-session-v1";
 const IDENTITY_KEY = "bob-identity-v1";
@@ -125,7 +126,7 @@ export function StoreProvider({ children }: { children: ReactNode }) {
     const connect = () => {
       if (closed) return;
       setSync((s) => (s === "connected" ? s : "connecting"));
-      const ws = new WebSocket(`ws://${location.hostname}:${RELAY_PORT}`);
+      const ws = new WebSocket(serviceUrl(RELAY_PORT, "ws"));
       wsRef.current = ws;
       ws.onopen = () => setSync("connected");
       ws.onmessage = (m) => {

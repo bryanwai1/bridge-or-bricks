@@ -1,0 +1,23 @@
+{
+  "name": "Bridge or Bricks",
+  "image": "mcr.microsoft.com/devcontainers/typescript-node:22",
+  "postCreateCommand": "npm install",
+  "forwardPorts": [5173, 5200],
+  "portsAttributes": {
+    "5173": { "label": "App (Vite)", "onAutoForward": "openBrowser" },
+    "5200": { "label": "Relay (multi-device sync)", "onAutoForward": "silent" }
+  },
+  "customizations": {
+    "vscode": {
+      "extensions": [
+        "dbaeumer.vscode-eslint",
+        "esbenp.prettier-vscode",
+        "bradlc.vscode-tailwindcss"
+      ],
+      "settings": {
+        "files.eol": "\n",
+        "editor.formatOnSave": false
+      }
+    }
+  }
+}

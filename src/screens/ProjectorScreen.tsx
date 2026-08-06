@@ -7,7 +7,7 @@ import {
   goldenGateOdds,
   teamProduction,
 } from "../data/rules";
-import { ENDGAME_UNLOCK_AFTER, RED_UNLOCK_AFTER, revealedCount } from "../data/gates";
+import { ENDGAME_UNLOCK_AFTER, revealedCount } from "../data/gates";
 
 const ACT = [
   { key: "green", label: "Act I · Growth", color: "#4e7d3a" },
@@ -148,7 +148,7 @@ export default function ProjectorScreen() {
         </div>
 
         <div className="proj-gates">
-          <div className={redOpen >= ENDGAME_UNLOCK_AFTER ? "pgate open" : "pgate"}>
+          <div className={orangeOpen >= RULES.redUnlockAfterOrange ? "pgate open" : "pgate"}>
             <span>Orange opened</span>
             <b>{orangeOpen}<i>/{RULES.redUnlockAfterOrange}</i></b>
           </div>

@@ -65,7 +65,19 @@ function tone({ freq, to, dur = 0.14, type = "sine", gain = 0.3, delay = 0 }: To
 /** A pitch that travels through several points — used for howls and sweeps. */
 function glide(
   points: [number, number][],
-  { type = "sawtooth", gain = 0.2, dur = 1.2, delay = 0, vibrato = 0 } = {},
+  {
+    type = "sawtooth",
+    gain = 0.2,
+    dur = 1.2,
+    delay = 0,
+    vibrato = 0,
+  }: {
+    type?: OscillatorType;
+    gain?: number;
+    dur?: number;
+    delay?: number;
+    vibrato?: number;
+  } = {},
 ) {
   const c = audio();
   if (!c || !master || muted) return;
