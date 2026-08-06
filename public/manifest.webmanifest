@@ -1,0 +1,11 @@
+{
+  "name": "Bridge or Bricks Companion",
+  "short_name": "BoB Companion",
+  "start_url": ".",
+  "display": "standalone",
+  "background_color": "#1c1712",
+  "theme_color": "#1c1712",
+  "icons": [
+    { "src": "assets/cards/GREEN-BACK.webp", "sizes": "512x512", "type": "image/webp" }
+  ]
+}

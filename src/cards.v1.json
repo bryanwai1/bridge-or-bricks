@@ -1,0 +1,191 @@
+{
+  "catalogVersion": "1.0",
+  "generatedAt": "2026-07-13",
+  "source": "Transcribed from print PDFs in Card/Print (Green Card Deck with Base Card.pdf, Orange Card.pdf, Red Card Final.pdf, End Game Card.pdf). Print files are treated as authoritative over Master Hub docs and Green.xlsx where they conflict.",
+  "statusLegend": ["confirmed = printed on the physical card", "playtest = being tested", "proposal = suggested", "unknown = visible but not mechanically defined", "retired = no longer active"],
+  "decks": {
+    "green": {
+      "name": "Green Deck - Terrain & Economy",
+      "backArt": "Wooden shield with green gem, forest background (page 1)",
+      "physicalCards": 47,
+      "cards": [
+        {
+          "id": "GR01", "title": "Grassland", "copies": 10, "kind": "terrain",
+          "effectText": "+1 Brick Production. Connect this tile with base tile to activate production.",
+          "scopeText": null, "status": "confirmed",
+          "icons": ["brick +production"],
+          "notes": "Green.xlsx says 9 copies; print PDF contains 10 (pages 2-11)."
+        },
+        {
+          "id": "GR02", "title": "River", "copies": 10, "kind": "terrain",
+          "effectText": "+1 Brick Production. Connect this tile with base tile to activate production.",
+          "scopeText": null, "status": "confirmed",
+          "icons": ["wood bridge required", "brick +production"],
+          "notes": "Wood bridge icon indicates crossing requirement (per Hub P1: Wood Bridge required to cross River)."
+        },
+        {
+          "id": "GR03", "title": "Valley", "copies": 10, "kind": "terrain",
+          "effectText": "+1 Brick Production. Connect this tile with base tile to activate production.",
+          "scopeText": "Require a metal bridge to cross",
+          "status": "confirmed",
+          "icons": ["metal bridge required", "brick production"]
+        },
+        {
+          "id": "GR04", "title": "Wild Animals", "copies": 5, "kind": "terrain",
+          "effectText": "-1 Brick on hand for every turn you are on this tile or beside this tile without a wall",
+          "scopeText": null, "status": "confirmed",
+          "icons": ["wall counters this", "brick -1"],
+          "notes": "4 artworks across 5 copies (wolves, apes, leopards, crocodiles, hippos). Creator ruling 2026-07-14: wording variants ('-1 Brick on hand' vs '-1 Brick Production') stay as printed for now - play with them as-is. Leopard copy missing the down-arrow badge (cosmetic)."
+        },
+        {
+          "id": "GR05", "title": "Nomad Tribe", "copies": 3, "kind": "terrain",
+          "effectText": "Pay 1 > Get 2 next turn. Invest 1 brick to the tribe to get 2 in the next turn. Stand to activate.",
+          "scopeText": null, "status": "confirmed",
+          "icons": ["brick x2"],
+          "notes": "3 art/text variants: 'river tribe', 'forest tribe', 'guardian tribe'. Hub P1 adds: removed if attacked by Red (not printed on card)."
+        },
+        {
+          "id": "GR06", "title": "Trading Post", "copies": 5, "kind": "terrain",
+          "effectText": "On this tile, you may trade with bank or player. Exchange rate: 2 Bricks = 1 Supply.",
+          "scopeText": "Only 1 player may stand on this tile",
+          "status": "confirmed",
+          "icons": ["trade brick/supply", "rate 2 brick = 1 crate", "player-to-player trade", "individual"]
+        },
+        {
+          "id": "GR07", "title": "Ancient Grove", "copies": 1, "kind": "terrain",
+          "effectText": "Produces 2 Bricks if connected to 2 Green Tiles",
+          "scopeText": "Produce 0 Bricks if requirement not met",
+          "status": "confirmed",
+          "icons": ["brick +production", "connected condition"]
+        },
+        {
+          "id": "GR08", "title": "Fertile Valley", "copies": 1, "kind": "terrain",
+          "effectText": "Produces 2 Bricks if connected to >=1 Valley",
+          "scopeText": "Produce 0 Bricks if not connected to Valley",
+          "status": "confirmed",
+          "icons": ["brick +production", "link condition", "valley"],
+          "notes": "Creator ruling 2026-07-14: follow the card - produces 2 if connected to >=1 Valley, else 0. Hub P1's '1 + 1 bonus' wording is outdated."
+        },
+        {
+          "id": "GR09", "title": "Trade Lock", "copies": 1, "kind": "action",
+          "effectText": "Trading Post cannot be used until the start of your next turn. No conversions. No player-to-player trades.",
+          "scopeText": "This is an action card, do not put this on the map.",
+          "status": "confirmed",
+          "icons": ["brick locked", "action", "global"]
+        },
+        {
+          "id": "GR10", "title": "Market Boost", "copies": 1, "kind": "action",
+          "effectText": "Until the start of your next turn, ALL Trading Post exchange rate becomes 1 Brick = 1 Supply",
+          "scopeText": "This is an action card, do not put this on the map.",
+          "status": "confirmed",
+          "icons": ["brick boost", "action", "global"]
+        }
+      ],
+      "baseCards": {
+        "title": "Base Card", "copies": 8, "kind": "base",
+        "artVariants": 4,
+        "effectText": null,
+        "status": "confirmed",
+        "notes": "4 homestead art variants x2 each (pages 49-56). Title printed upright and rotated 180deg. Page 57 is the Base Card back (parchment panel with mixed terrain border). Base = origin/HQ/command hub per Tone.docx."
+      }
+    },
+    "orange": {
+      "name": "Orange Deck - Crisis Layer",
+      "backArt": "Wooden shield, crossed hammers, flaming orange gem (page 1)",
+      "physicalCards": 36,
+      "cards": [
+        { "id": "OR01", "title": "Hazardous Opportunity", "copies": 1, "kind": "terrain", "effectText": "Gain 2 resources; Select 1 structure to lose 1 durability", "scopeText": "This card only affects YOU", "status": "confirmed", "icons": ["exchange", "individual", "bridge"] },
+        { "id": "OR02", "title": "Lost Time", "copies": 1, "kind": "action", "effectText": "Lose 1 action this turn", "scopeText": "This card only affects YOU", "status": "confirmed", "icons": ["lose action", "action", "individual"] },
+        { "id": "OR03", "title": "Stalled Orders", "copies": 1, "kind": "action", "effectText": "Skip 1 action next round", "scopeText": "This card only affects YOU", "status": "confirmed", "icons": ["skip", "action", "individual"] },
+        { "id": "OR04", "title": "Frozen Moment", "copies": 1, "kind": "action", "effectText": "You may not Build this turn.", "scopeText": "This card only affects YOU", "status": "confirmed", "icons": ["no build", "action", "individual"] },
+        { "id": "OR05", "title": "Resource Toll", "copies": 1, "kind": "action", "effectText": "Pay 2 of ANY resources", "scopeText": "This card only affects YOU", "status": "confirmed", "icons": ["pay", "action", "individual"] },
+        { "id": "OR06", "title": "Heavy Tariff", "copies": 1, "kind": "action", "effectText": "Pay 2 resources or GO BACK 1 hex tile", "scopeText": "This card only affects YOU", "status": "confirmed", "icons": ["lose", "action", "individual"] },
+        { "id": "OR07", "title": "Thin Margins", "copies": 1, "kind": "action", "effectText": "Discard 1 of any resource", "scopeText": "This card only affects YOU & bridges beside", "status": "confirmed", "icons": ["lose", "action", "individual"], "notes": "Scope line possibly truncated as printed." },
+        { "id": "OR08", "title": "Structural Fatigue", "copies": 1, "kind": "action", "effectText": "Bridges on your tile loses 1 durability", "scopeText": "This card only affects bridges on your tile", "status": "confirmed", "icons": ["lose durability", "action", "tile effect"] },
+        { "id": "OR09", "title": "Emergency Repairs", "copies": 1, "kind": "action", "effectText": "Pay 2 Bricks or any bridge beside loses 1 durability", "scopeText": "This card only affects bridges beside your tile", "status": "confirmed", "icons": ["pay", "action", "individual"] },
+        { "id": "OR10", "title": "Pressure Surge", "copies": 1, "kind": "action", "effectText": "All adjacent walls lose 1 durability.", "scopeText": "This card only affects YOU", "status": "confirmed", "icons": ["damage", "action", "area effect"] },
+        { "id": "OR11", "title": "Breach Warning", "copies": 1, "kind": "action", "effectText": "Walls and bridges here take +1 damage", "scopeText": "This card only affects YOU", "status": "confirmed", "icons": ["damage", "action", "individual"] },
+        { "id": "OR12", "title": "Cautious Advance", "copies": 1, "kind": "terrain", "effectText": "Movement ends immediately upon entering this tile", "scopeText": "This card affects everyone on this tile", "status": "confirmed", "icons": ["dead end", "individual"] },
+        { "id": "OR13", "title": "Forced Pause", "copies": 1, "kind": "action", "effectText": "You may take only 1 action this turn", "scopeText": "Select 2 other teams to pause together", "status": "confirmed", "icons": ["lose action", "action", "3 teams"] },
+        { "id": "OR14", "title": "Divided Focus", "copies": 1, "kind": "action", "effectText": "Choose: Trade OR Move this turn", "scopeText": "This card only affects YOU", "status": "confirmed", "icons": ["choose", "action", "individual"] },
+        { "id": "OR15", "title": "Competing Priorities", "copies": 1, "kind": "action", "effectText": "Choose: Trade OR Move this turn", "scopeText": "This card only affects YOU", "status": "confirmed", "icons": ["choose", "action", "individual"], "notes": "Effect identical to OR14; different art." },
+        { "id": "OR16", "title": "Operational Drag", "copies": 1, "kind": "action", "effectText": "Discard 1 of any resource & lose 1 action", "scopeText": "This card affects 2 teams after you", "status": "confirmed", "icons": ["lose", "action", "2 teams"] },
+        { "id": "OR17", "title": "Miscommunication", "copies": 1, "kind": "action", "effectText": "Reveal your resources and discard 1 resource", "scopeText": "Select a team of your choice including yourself", "status": "confirmed", "icons": ["lose", "action", "individual"] },
+        { "id": "OR18", "title": "Narrow Passage", "copies": 1, "kind": "terrain", "effectText": "Pay 2 resources to pass or stop on this tile", "scopeText": "This card only affects YOU", "status": "confirmed", "icons": ["pay", "action", "individual"], "notes": "Has action-card footer but reads as terrain; icon labels missing on print." },
+        { "id": "OR19", "title": "Final Warning", "copies": 1, "kind": "action", "effectText": "Pay 2 metal OR retreat 1 hex", "scopeText": "This card only affects YOU", "status": "confirmed", "icons": ["lose metal", "action", "individual"] },
+        { "id": "OR20", "title": "Dust Plains", "copies": 1, "kind": "terrain", "effectText": "Build here costs +1 resource", "scopeText": "This card only affects YOU", "status": "confirmed", "icons": ["lose", "individual"], "notes": "Has action-card footer but reads as terrain - confirm placement rule." },
+        { "id": "OR21", "title": "Flooded Lowland", "copies": 1, "kind": "terrain", "effectText": "Bridges here lose 1 durability at end of each round", "scopeText": "This terrain affects bridges built here", "status": "confirmed", "icons": ["damage", "individual", "bridge"] },
+        { "id": "OR22", "title": "Supply Chokepoint", "copies": 1, "kind": "terrain", "effectText": "Bridges here lose 1 durability at end of each round", "scopeText": "This terrain affects bridges built here", "status": "playtest", "icons": ["choice", "global"], "notes": "Creator ruling 2026-07-14: leave as printed for now (effect matches OR21 despite Choice/Global icons). Revisit after playtesting." },
+        { "id": "OR23", "title": "Bureaucratic District", "copies": 1, "kind": "terrain", "effectText": "First action taken here each turn costs 2 actions", "scopeText": "This terrain affects all teams entering this tile", "status": "confirmed", "icons": ["cost x2", "global"] },
+        { "id": "OR24", "title": "Fragile Ridge", "copies": 1, "kind": "terrain", "effectText": "If you end your turn here, lose 1 durability for ALL infrastructures", "scopeText": "This terrain affects ALL structures built here", "status": "confirmed", "icons": ["damage", "individual", "bridge"] },
+        { "id": "OR25", "title": "Overgrown Route", "copies": 1, "kind": "terrain", "effectText": "Pay 1 resource to move out of this tile", "scopeText": "This terrain affects all teams on this tile", "status": "confirmed", "icons": ["cost", "global"] },
+        { "id": "OR26", "title": "Industrial Smog Zone", "copies": 1, "kind": "terrain", "effectText": "Gain 1 resource on entry; adjacent walls lose 1 durability", "scopeText": "This card affects ALL adjacent walls", "status": "confirmed", "icons": ["gain", "damage", "global"] },
+        { "id": "OR27", "title": "Cracked Foundation", "copies": 1, "kind": "terrain", "effectText": "Build and Upgrade here cost +1 resource", "scopeText": "This terrain affects all structures", "status": "confirmed", "icons": ["cost -1", "global"], "notes": "Creator ruling 2026-07-14: badge should read '-1' (pay 1 extra); printed effect text stands. Fix badge art in next print run." },
+        { "id": "OR28", "title": "Unstable Ground", "copies": 1, "kind": "terrain", "effectText": "No Build actions may be taken here this round", "scopeText": "This terrain affects ONLY the round it is placed", "status": "confirmed", "icons": ["skip build", "tile effect", "bridge"] },
+        { "id": "OR29", "title": "Trade Jam", "copies": 1, "kind": "terrain", "effectText": "All Teams may not use Trade Tiles this turn", "scopeText": "Terrain effect activates when any team enters", "status": "confirmed", "icons": ["cease trade", "global"] },
+        { "id": "OR30", "title": "Market Drag", "copies": 1, "kind": "terrain", "effectText": "Trades while on this tile cost +1 resource", "scopeText": "This terrain allows trade with extra cost", "status": "confirmed", "icons": ["cost -1", "tile effect", "trade"], "notes": "Creator ruling 2026-07-14: '-1' badge is correct (pay 1 extra per trade); printed effect text stands." },
+        { "id": "OR31", "title": "Uneasy Truce", "copies": 1, "kind": "terrain", "effectText": "Teams on this tile may not Trade this turn", "scopeText": "This terrain affects teams on this tile", "status": "confirmed", "icons": ["cease trade", "tile effect"] },
+        { "id": "OR32", "title": "Extraction Site", "copies": 1, "kind": "terrain", "effectText": "Gain 2 resources; lose 1 durability on all adjacent infrastructure", "scopeText": "This terrain affects ONLY the team entering", "status": "confirmed", "icons": ["gain +2", "individual", "bridge"] },
+        { "id": "OR33", "title": "Emergency Contract", "copies": 1, "kind": "terrain", "effectText": "Gain 2 Supply; lose 1 action next round", "scopeText": "Card activates when team places this tile", "status": "confirmed", "icons": ["gain +2", "individual"] },
+        { "id": "OR34", "title": "Risky Expansion", "copies": 1, "kind": "terrain", "effectText": "Build here costs -1 Supply; all adjacent bridges lose 1 durability", "scopeText": "Card activates when team places this tile", "status": "confirmed", "icons": ["save 1", "individual"] },
+        { "id": "OR35", "title": "Short-Term Boom", "copies": 1, "kind": "terrain", "effectText": "Production here +2 Bricks this round; -1 Brick next round", "scopeText": "This card only affects ONE team", "status": "confirmed", "icons": ["gain +2 brick", "individual"] },
+        { "id": "OR36", "title": "Political Favor", "copies": 1, "kind": "action", "effectText": "Ignore 1 Orange penalty this turn; discard 1 resource", "scopeText": "This card only affects YOU", "status": "confirmed", "icons": ["cost -1", "action", "individual"] }
+      ]
+    },
+    "red": {
+      "name": "Red Deck - Escalation Layer",
+      "backArt": "Fiery red shield with crossed swords and flaming gem (page 29)",
+      "physicalCards": 28,
+      "cards": [
+        { "id": "RD01", "title": "Burning Crossing", "copies": 1, "kind": "terrain", "effectText": "Bridges here lose 1 durability at end of each round", "scopeText": "This terrain affects bridges built here", "status": "confirmed", "icons": ["damage", "tile effect", "bridge"] },
+        { "id": "RD02", "title": "Siege Grounds", "copies": 1, "kind": "terrain", "effectText": "Walls around this tile cannot be repaired", "scopeText": "This terrain affects all walls adjacent to it", "status": "confirmed", "icons": ["no repair", "tile effect", "bridge"] },
+        { "id": "RD03", "title": "Sabotaged Foundations", "copies": 1, "kind": "terrain", "effectText": "Build here costs +2 resource", "scopeText": "This terrain affects all teams who build here", "status": "confirmed", "icons": ["cost x2", "tile effect", "bridge"] },
+        { "id": "RD04", "title": "Fractured Border", "copies": 1, "kind": "terrain", "effectText": "Structures here take +1 durability damage when damaged", "scopeText": "This card affects all infrastructures here", "status": "confirmed", "icons": ["damage x2", "tile effect", "bridge"], "notes": "Printed scope has typo 'infastructures'." },
+        { "id": "RD05", "title": "Warpath Corridor", "copies": 1, "kind": "terrain", "effectText": "Movement through this tile costs +1 action", "scopeText": "This terrain affects any team on this tile", "status": "confirmed", "icons": ["cost x2 action", "tile effect"] },
+        { "id": "RD06", "title": "Wild Predator Grounds", "copies": 1, "kind": "terrain", "effectText": "Build a wall or lose 1 resource if team ends turn here", "scopeText": "This card affects every team on this terrain", "status": "confirmed", "icons": ["lose", "tile effect", "wall"], "notes": "Printed scope missing the word 'affects'." },
+        { "id": "RD07", "title": "Collapsing Outpost", "copies": 1, "kind": "terrain", "effectText": "If a structure here reaches 1 durability, remove it", "scopeText": "Affects ALL infrastructure around this tile", "status": "confirmed", "icons": ["lose", "tile effect"] },
+        { "id": "RD08", "title": "Ember Field", "copies": 1, "kind": "terrain", "effectText": "If any team stands here, ALL teams' production is reduced by 1", "scopeText": "This card affects ALL teams globally", "status": "confirmed", "icons": ["pay", "global"] },
+        { "id": "RD09", "title": "Occupied Territory", "copies": 1, "kind": "terrain", "effectText": "Only 1 team may end their turn here", "scopeText": "This card activates when a Team is on this tile", "status": "confirmed", "icons": ["limited", "tile effect", "individual"] },
+        { "id": "RD10", "title": "Forced Evacuation Zone", "copies": 1, "kind": "terrain", "effectText": "Choose ANY team on the map to retreat 1 hex", "scopeText": "Card activates when ANY team is on this tile", "status": "confirmed", "icons": ["choice", "global"] },
+        { "id": "RD11", "title": "Control Point", "copies": 1, "kind": "terrain", "effectText": "Team with the most Supply gains 1 Supply", "scopeText": "This card only affects ONCE", "status": "confirmed", "icons": ["gain +1", "tile effect", "bridge"] },
+        { "id": "RD12", "title": "Contested Grounds", "copies": 1, "kind": "terrain", "effectText": "If 2 or more teams are here, ALL teams lose 1 action", "scopeText": "This card activates when 2 Teams are present", "status": "confirmed", "icons": ["lose action", "tile effect", "global"] },
+        { "id": "RD13", "title": "Strategic Chokepoint", "copies": 1, "kind": "terrain", "effectText": "Pay 1 of ANY resource to enter this tile", "scopeText": "This effect activates each time a TEAM enters", "status": "confirmed", "icons": ["cost", "tile effect"], "notes": "Title on asset list was 'Strategic Checkpoint'; print reads 'Chokepoint'." },
+        { "id": "RD14", "title": "Hostile Occupation", "copies": 1, "kind": "terrain", "effectText": "If you leave this tile, lose 1 durability on one structure on the map", "scopeText": "This card only affects YOU", "status": "confirmed", "icons": ["choose", "damage", "global"] },
+        { "id": "RD15", "title": "Resource Blockade", "copies": 1, "kind": "terrain", "effectText": "All teams halt production for 1 round", "scopeText": "Affects everyone EXCEPT the team on this tile", "status": "confirmed", "icons": ["halt", "global", "individual"] },
+        { "id": "RD16", "title": "Taxed Stronghold", "copies": 1, "kind": "terrain", "effectText": "Build and Upgrade here cost +1 action", "scopeText": "This card only affects team on this tile", "status": "confirmed", "icons": ["tile effect", "cost -1 action", "bridge"] },
+        { "id": "RD17", "title": "Rampaging Beasts", "copies": 1, "kind": "terrain", "effectText": "ALL walls lose 1 durability here, lose 1 Supply if no wall is built", "scopeText": "This card affects ANY team on this tile", "status": "confirmed", "icons": ["lose", "wall", "tile effect"] },
+        { "id": "RD18", "title": "Ruptured Pipeline", "copies": 1, "kind": "terrain", "effectText": "If no Wall is built here, production is reduced by 1", "scopeText": "This card affects ANY team on this tile", "status": "confirmed", "icons": ["lose", "wall", "tile effect"] },
+        { "id": "RD19", "title": "Scorched Earth", "copies": 1, "kind": "terrain", "effectText": "Disable a tile anywhere on the map from construction permanently", "scopeText": "Tile effect activates when a Team is present", "status": "confirmed", "icons": ["lose build", "global", "bridge"] },
+        { "id": "RD20", "title": "Civil Unrest", "copies": 1, "kind": "terrain", "effectText": "If 2 or more Red tiles are adjacent at end of round, remove 1 resource from each team", "scopeText": "This card affects teams when criteria are met", "status": "confirmed", "icons": ["lose", "tile effect"] },
+        { "id": "RD21", "title": "Infrastructure Collapse", "copies": 1, "kind": "terrain", "effectText": "All structures around this tile lose 1 durability immediately", "scopeText": "The terrain effect activates when the first team enters", "status": "confirmed", "icons": ["damage", "tile effect", "bridge"] },
+        { "id": "RD22", "title": "Open Rebellion", "copies": 1, "kind": "terrain", "effectText": "When explored, all teams discard 1 resource", "scopeText": "Tile effect activates when a Team explores it", "status": "confirmed", "icons": ["lose", "global", "bridge"] },
+        { "id": "RD23", "title": "Border Skirmish", "copies": 1, "kind": "terrain", "effectText": "If no Wall is built on this tile, all structures within a radius of 2 tiles lose 1 durability", "scopeText": "The terrain effect activates when the team is present and no walls are built", "status": "confirmed", "icons": ["damage", "tiles effect", "wall"] },
+        { "id": "RD24", "title": "Werewolf Sighting", "copies": 1, "kind": "terrain", "effectText": "Any team present must build 1 Wall immediately OR lose all their resources", "scopeText": "This terrain affects any TEAM present here", "status": "confirmed", "icons": ["lose", "tile effect", "wall"] },
+        { "id": "RD25", "title": "Defensive Standoff", "copies": 1, "kind": "terrain", "effectText": "Teams here may take only 1 action", "scopeText": "This terrain affects all teams on this tile", "status": "confirmed", "icons": ["cost -1 action", "tile effect"] },
+        { "id": "RD26", "title": "Earthquake", "copies": 1, "kind": "action", "effectText": "All structures on board lose 1 durability; if any structure loses all durability, remove it", "scopeText": "Effect activates when team discards the card", "status": "confirmed", "icons": ["damage", "action", "global"], "notes": "Footer: This is an action card, do not put this on the map." },
+        { "id": "RD27", "title": "Typhoon", "copies": 1, "kind": "action", "effectText": "All bridges lose 1 durability and movement everywhere costs +1 action this round", "scopeText": "Effect activates when team discards the card", "status": "confirmed", "icons": ["cost -1 action", "damage", "action", "global"], "notes": "Footer: This is an action card, do not put this on the map." },
+        { "id": "RD28", "title": "Plague Outbreak", "copies": 1, "kind": "action", "effectText": "Each team must discard 2 resources of your choice", "scopeText": "Effect activates when team discards the card", "status": "confirmed", "icons": ["lose", "action", "global"], "notes": "Footer: This is an action card, do not put this on the map." }
+      ]
+    },
+    "endgame": {
+      "name": "End Game Deck",
+      "backArt": "Glowing stone question mark on fiery background (page 10)",
+      "physicalCards": 9,
+      "accessRule": "Spend 1 Supply to draw 1 card; resolve immediately (Hub P1).",
+      "cards": [
+        { "id": "EG01", "title": "Golden Gate", "copies": 1, "kind": "endgame", "effectText": null, "scopeText": null, "status": "confirmed", "notes": "No printed text - resolution is by rulebook: Collaborative = victory; Competitive = triggers final resolution (Hub P1). Bright portal atop mountain with angel statues." },
+        { "id": "EG02", "title": "Decoy", "copies": 6, "kind": "endgame", "effectText": null, "scopeText": null, "status": "confirmed", "notes": "Dark ruined-fortress mirror of the Golden Gate artwork. No printed text - no effect (dead draw), pending creator confirmation." },
+        { "id": "EG03", "title": "Wild Wolves", "copies": 1, "kind": "endgame", "effectText": "Build a wall OR lose 2 resources", "scopeText": "This effect affects any TEAM beside here", "status": "confirmed", "icons": ["lose", "tile effect", "wall"] },
+        { "id": "EG04", "title": "Barbarians", "copies": 1, "kind": "endgame", "effectText": "Build a wall OR lose 2 resources", "scopeText": "This effect affects any TEAM beside here", "status": "confirmed", "icons": ["lose", "tile effect", "wall"], "notes": "Resolves the handoff doc's 'blank raider card' question: printed effect is identical to Wild Wolves." }
+      ]
+    }
+  },
+  "printIssuesForCreator": [
+    "RESOLVED 2026-07-14 - OR22: leave as printed for now (status playtest, revisit later).",
+    "RESOLVED 2026-07-14 - OR27/OR30: badge value is '-1'; printed '+1 cost' effect text stands.",
+    "RESOLVED 2026-07-14 - GR04 wording variants: play as printed.",
+    "RESOLVED 2026-07-14 - GR08 Fertile Valley: follow the card (2 if connected, else 0); Hub doc outdated.",
+    "RESOLVED 2026-07-14 - Green.xlsx 60-card Resource/Supply/Special deck: not part of the game, ignore. Green.xlsx counts superseded by print PDFs.",
+    "Cosmetic typos for a future print run (no rules impact): RD04 'infastructures'; RD06 scope missing 'affects'; RD11 'Teams...gains'; RD13 'affect'; RD20 'criterias'; RD21 'structures...loses'; OR29 'effects activates'; GR04 leopard copy missing badge."
+  ]
+}

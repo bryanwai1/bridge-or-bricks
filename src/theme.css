@@ -1,0 +1,730 @@
+/* ============================================================
+   BRIDGE OR BRICKS — theme.css
+   Loaded last. This file owns the look of every screen.
+
+   The palette is driven by the ACT. Set data-act="1|2|3" on
+   <html> and the whole app repaints — CSS and the canvas
+   backdrop together.
+
+     Act 1  Green   growth
+     Act 2  Orange  pressure
+     Act 3  Red     convergence
+   ============================================================ */
+
+/* ---------- ACT 1 · GROWTH ---------- */
+:root{
+  /* world — read by theme/Backdrop.tsx */
+  --bob-ink:#08120C;
+  --bob-deep:#0E1F16;
+  --bob-moss:#1B3A28;
+  --bob-leaf:#4E8C5A;
+  --bob-glow:#9FD98A;
+  --bob-fire:#FFE39A;
+
+  /* surfaces — translucent so the world shows through */
+  --bg:#08120C;
+  --plaque:rgba(9,20,14,.60);
+  --plaque-2:rgba(0,0,0,.30);
+  --panel:rgba(9,20,14,.60);
+  --panel-2:rgba(0,0,0,.30);
+
+  --line:rgba(227,178,74,.16);
+  --text:#E9E1CC;
+  --muted:#A8A08C;
+  --accent:#E3B24A;
+  --accent-2:#F7DE9A;
+  --accent-dim:#8A6C2A;
+  --danger:#D8695E;
+  --good:#7FC98A;
+  --radius:16px;
+
+  --display:'Cinzel',Georgia,'Times New Roman',serif;
+  --body:'Karla','Segoe UI',system-ui,-apple-system,sans-serif;
+  --mono:'JetBrains Mono',ui-monospace,monospace;
+  --ease:cubic-bezier(.22,.68,.28,1);
+
+  --act-name:'Act 1 \00b7 Growth';
+  font-family:var(--body);
+}
+
+/* ---------- ACT 2 · PRESSURE ---------- */
+html[data-act="2"]{
+  --bob-ink:#120D07; --bob-deep:#241708; --bob-moss:#432711;
+  --bob-leaf:#B0691F; --bob-glow:#F0A44A; --bob-fire:#FFD08A;
+  --bg:#120D07;
+  --plaque:rgba(20,12,5,.60); --panel:rgba(20,12,5,.60);
+  --act-name:'Act 2 \00b7 Pressure';
+}
+
+/* ---------- ACT 3 · CONVERGENCE ---------- */
+html[data-act="3"]{
+  --bob-ink:#100607; --bob-deep:#22090B; --bob-moss:#471218;
+  --bob-leaf:#9E262C; --bob-glow:#F0685A; --bob-fire:#FFB08A;
+  --bg:#100607;
+  --plaque:rgba(18,6,7,.62); --panel:rgba(18,6,7,.62);
+  --act-name:'Act 3 \00b7 Convergence';
+}
+
+/* ============================================================
+   BASE
+   ============================================================ */
+body{
+  background:transparent;          /* the canvas backdrop is the background */
+  color:var(--text);
+  font-family:var(--body);
+  transition:none;
+}
+
+/* The Backdrop canvas is fixed at z-index 0. Anything static would
+   paint underneath it, so the app chrome is lifted above. */
+.app,.content,.topbar,.tabbar,.setup,.stack,.board-screen,.proj,.projector{
+  position:relative;
+  z-index:1;
+}
+
+/* Vanta is replaced by the procedural backdrop */
+.vanta-bg{display:none!important}
+
+h1,h2,h3,.team-name,.ring-label b,.proj-title h1{
+  font-family:var(--display);
+  font-weight:600;
+  letter-spacing:.05em;
+}
+h1{text-shadow:0 0 34px rgba(227,178,74,.22)}
+h2{
+  font-size:1rem;
+  letter-spacing:.14em;
+  text-transform:uppercase;
+  color:var(--accent-2);
+}
+.muted{color:var(--muted)}
+::selection{background:var(--accent);color:#160E02}
+:focus-visible{outline:2px solid var(--accent-2);outline-offset:2px;border-radius:8px}
+
+*{scrollbar-width:thin;scrollbar-color:var(--accent-dim) transparent}
+*::-webkit-scrollbar{width:9px;height:9px}
+*::-webkit-scrollbar-thumb{background:var(--accent-dim);border-radius:9px}
+*::-webkit-scrollbar-track{background:transparent}
+
+/* live numbers must not jitter as they tick */
+.counter,.pteam-res,.pteam-net,.pgate b,.pin,.qr-pin b,.card-count{
+  font-family:var(--mono);
+  font-variant-numeric:tabular-nums;
+}
+
+/* ============================================================
+   CARVED PLAQUES — the app's one surface treatment
+   ============================================================ */
+.card,.modal-body,.sheet,.join-card,.cam-body,.signin-card,.proj-side,.projector-side{
+  position:relative;
+  background:
+    linear-gradient(180deg,rgba(255,255,255,.045),transparent 26%),
+    var(--plaque);
+  border:1px solid var(--line);
+  border-radius:var(--radius);
+  box-shadow:
+    inset 0 1px 0 rgba(247,222,154,.14),
+    inset 0 -20px 40px rgba(0,0,0,.35),
+    0 18px 44px rgba(0,0,0,.42);
+  backdrop-filter:blur(10px) saturate(1.15);
+  -webkit-backdrop-filter:blur(10px) saturate(1.15);
+}
+/* the hairline of light along the top edge — the carved tell */
+.card::before,.modal-body::before,.join-card::before{
+  content:"";
+  position:absolute;
+  inset:0 22% auto;
+  top:-1px;
+  height:1px;
+  background:linear-gradient(90deg,transparent,var(--accent),transparent);
+  opacity:.5;
+  pointer-events:none;
+}
+
+.topbar{
+  background:linear-gradient(180deg,rgba(9,20,14,.85),rgba(9,20,14,.55));
+  border-bottom:1px solid var(--line);
+  backdrop-filter:blur(12px);
+  -webkit-backdrop-filter:blur(12px);
+}
+.tabbar{
+  background:linear-gradient(0deg,rgba(9,20,14,.92),rgba(9,20,14,.6));
+  border-top:1px solid var(--line);
+  backdrop-filter:blur(12px);
+  -webkit-backdrop-filter:blur(12px);
+}
+.tab{
+  font-family:var(--body);
+  font-weight:600;
+  letter-spacing:.06em;
+  color:var(--muted);
+  transition:color .25s var(--ease);
+}
+.tab:hover{color:var(--text)}
+.tab.active{
+  color:var(--accent);
+  text-shadow:0 0 14px rgba(227,178,74,.5);
+}
+
+/* ============================================================
+   CONTROLS
+   ============================================================ */
+.chip{
+  font-family:var(--body);
+  font-weight:600;
+  font-size:.86rem;
+  color:var(--text);
+  background:var(--plaque-2);
+  border:1px solid rgba(255,255,255,.08);
+  border-radius:999px;
+  padding:10px 16px;
+  transition:all .26s var(--ease);
+}
+.chip:hover:not(:disabled):not(.active){
+  color:var(--accent-2);
+  border-color:var(--line);
+  transform:translateY(-1px);
+}
+.chip.active{
+  color:#160E02;
+  border-color:transparent;
+  background:linear-gradient(160deg,var(--accent-2),var(--accent) 55%,var(--accent-dim));
+  box-shadow:0 6px 22px rgba(227,178,74,.32),inset 0 1px 0 rgba(255,255,255,.6);
+}
+.chip.danger{color:#FFB9B3;border-color:rgba(216,105,94,.45);background:rgba(216,105,94,.1)}
+.chip:disabled{opacity:.3}
+
+.primary{
+  font-family:var(--display);
+  font-weight:600;
+  font-size:1rem;
+  letter-spacing:.1em;
+  text-transform:uppercase;
+  color:#160E02;
+  padding:17px;
+  border:none;
+  border-radius:13px;
+  background:linear-gradient(160deg,var(--accent-2),var(--accent) 52%,#B98A2C);
+  box-shadow:0 10px 34px rgba(227,178,74,.26),inset 0 1px 0 rgba(255,255,255,.65);
+  transition:transform .25s var(--ease),box-shadow .25s var(--ease);
+}
+.primary:hover:not(:disabled){
+  transform:translateY(-2px);
+  box-shadow:0 16px 44px rgba(227,178,74,.4),inset 0 1px 0 rgba(255,255,255,.7);
+}
+.primary:active{transform:translateY(0)}
+.primary:disabled{opacity:.35;box-shadow:none;transform:none}
+
+.mini,.big-btn,.action-btn,.picker-card,.ref-card,.role-card,.car-card{
+  font-family:var(--body);
+  background:var(--plaque-2);
+  border:1px solid rgba(255,255,255,.08);
+  color:var(--text);
+  transition:all .26s var(--ease);
+}
+.mini:hover,.big-btn:hover,.action-btn:hover:not(:disabled),.ref-card:hover{
+  border-color:var(--line);
+  color:var(--accent-2);
+}
+.action-btn{border-radius:12px;padding:14px 10px}
+.action-btn:disabled{opacity:.3}
+.mini.danger{color:#FFB9B3;border-color:rgba(216,105,94,.4)}
+
+input,select,textarea{
+  font-family:var(--body);
+  background:var(--plaque-2);
+  color:var(--text);
+  border:1px solid rgba(255,255,255,.08);
+  border-radius:10px;
+  transition:border-color .25s var(--ease);
+}
+input:focus,select:focus,textarea:focus{border-color:var(--line);outline:none}
+input::placeholder{color:var(--muted)}
+
+/* fields that live inside a row or a card header stay unboxed */
+.row input.card-search,
+.identity{
+  background:var(--plaque-2);
+  border:1px solid rgba(255,255,255,.08);
+}
+.join-pin{
+  text-align:center;
+  font-family:var(--mono);
+  letter-spacing:8px;
+}
+
+/* ============================================================
+   SETUP / HOME
+   ============================================================ */
+.setup{
+  max-width:600px;
+  margin:0 auto;
+  display:flex;
+  flex-direction:column;
+  gap:18px;
+  padding:clamp(28px,6vh,64px) 18px 140px;
+}
+.setup-hero{
+  display:flex;
+  flex-direction:column;
+  align-items:center;
+  text-align:center;
+  gap:14px;
+  padding:4px 0 18px;
+}
+.setup-hero h1{
+  font-size:clamp(2.2rem,7vw,3.4rem);
+  line-height:1.04;
+  color:var(--text);
+  text-shadow:0 0 38px rgba(227,178,74,.26);
+}
+.setup-hero .muted{max-width:44ch;text-align:center;font-size:.98rem}
+.setup-emblem{
+  width:clamp(104px,20vw,140px);
+  filter:drop-shadow(0 12px 26px rgba(0,0,0,.65)) drop-shadow(0 0 26px rgba(227,178,74,.34));
+  animation:emblemFloat 7s ease-in-out infinite;
+}
+.card{padding:22px;gap:12px}
+@keyframes emblemFloat{0%,100%{transform:translateY(0)}50%{transform:translateY(-7px)}}
+
+.guide-cta{
+  margin-top:6px;
+  font-size:.72rem;
+  letter-spacing:.14em;
+  text-transform:uppercase;
+  color:var(--accent);
+  padding:11px 22px;
+}
+.guide-cta:hover{background:var(--accent);color:#160E02}
+
+.team-block{
+  border-radius:12px;
+  background:var(--plaque-2);
+  border:1px solid rgba(255,255,255,.06);
+  border-left:3px solid var(--team);
+  overflow:hidden;
+  transition:all .3s var(--ease);
+}
+.team-block:hover{background:rgba(0,0,0,.42)}
+
+/* colour tray slides open under the row */
+.tray{max-height:0;opacity:0;transition:max-height .38s var(--ease),opacity .3s var(--ease)}
+.team-block.picking .tray{max-height:140px;opacity:1}
+.tray-in{display:flex;flex-wrap:wrap;gap:9px;padding:0 14px 14px 44px}
+.swatch.taken{opacity:.2;pointer-events:none}
+
+/* player count stepper */
+.crew{display:flex;align-items:center;gap:8px;margin-left:auto;flex:0 0 auto}
+.step{
+  width:26px;height:26px;flex:0 0 26px;
+  border-radius:50%;padding:0;
+  font:700 1rem/1 var(--body);
+  color:var(--accent);
+  background:rgba(0,0,0,.4);
+  border:1px solid var(--line);
+  cursor:pointer;
+  transition:all .22s var(--ease);
+}
+.step:hover:not(:disabled){background:var(--accent);color:#160E02}
+.step:disabled{opacity:.2;cursor:not-allowed}
+.crew-seats{display:flex;gap:3px;min-width:70px;justify-content:center}
+.crew-seat{
+  width:7px;height:7px;border-radius:50%;
+  background:var(--accent);
+  box-shadow:0 0 8px var(--accent);
+  opacity:.85;
+}
+.crew-n{
+  font:700 .8rem var(--mono);
+  color:var(--muted);
+  min-width:14px;text-align:center;
+}
+
+.team-row{
+  display:flex;
+  flex-wrap:nowrap;
+  align-items:center;
+  gap:10px;
+  background:var(--plaque-2);
+  border:1px solid rgba(255,255,255,.06);
+  border-left:3px solid var(--team);
+  border-radius:12px;
+  padding:10px 12px;
+  transition:all .3s var(--ease);
+}
+.team-block .team-row{background:none;border:none;border-radius:0;padding:12px 14px}
+.team-dot{
+  width:22px;height:22px;
+  flex:0 0 22px;
+  padding:0;cursor:pointer;
+  border-radius:50%;
+  background:radial-gradient(circle at 34% 30%,#fff6,transparent 60%),var(--team);
+  box-shadow:0 0 0 1px rgba(0,0,0,.5),0 0 16px -2px var(--team);
+}
+
+/* Inline fields sit inside a row, so they must stay invisible.
+   The generic input rule above would otherwise box them. */
+.team-row .team-name,
+input.team-name{
+  flex:1 1 auto;
+  min-width:0;
+  background:transparent;
+  border:none;
+  padding:0;
+  font-family:var(--body);
+  font-weight:700;
+  font-size:1rem;
+  color:var(--text);
+}
+.team-row .team-name:focus{border:none;outline:none}
+.team-dot:hover{transform:scale(1.14)}
+
+.swatches{display:flex;gap:5px;flex:0 0 auto}
+.swatch{
+  width:20px;height:20px;
+  flex:0 0 20px;
+  border:2px solid transparent;
+  transition:transform .2s var(--ease),border-color .2s var(--ease);
+}
+.swatch:hover{transform:scale(1.18)}
+.swatch.on{outline:none;border-color:var(--accent-2);box-shadow:0 0 12px -2px currentColor}
+
+@media (max-width:560px){
+  .team-row{flex-wrap:wrap;row-gap:10px}
+  .crew{margin-left:0;width:100%;justify-content:space-between;padding-left:32px}
+  .tray-in{padding-left:14px}
+}
+
+/* ============================================================
+   MODALS
+   ============================================================ */
+.modal{
+  background:rgba(3,8,5,.72);
+  backdrop-filter:blur(14px);
+  -webkit-backdrop-filter:blur(14px);
+  animation:modalFade .32s var(--ease);
+}
+@keyframes modalFade{from{opacity:0}to{opacity:1}}
+.modal-body{padding:22px;animation:modalUp .42s var(--ease)}
+@keyframes modalUp{from{opacity:0;transform:translateY(26px)}to{opacity:1;transform:none}}
+.ability{border-top:1px solid var(--line);padding:14px 0}
+.ability b{color:var(--accent-2);font-family:var(--display);letter-spacing:.06em}
+.ability ul{color:var(--text)}
+.ability-icon{
+  filter:drop-shadow(0 0 10px rgba(227,178,74,.35));
+}
+
+/* ============================================================
+   SIGN-IN BOARD
+   ============================================================ */
+.signin-card{
+  border-top:none;
+  border-left:3px solid var(--team);
+  padding:20px 14px;
+}
+.signin-card:hover{
+  transform:translateY(-3px);
+  box-shadow:0 20px 46px rgba(0,0,0,.55),0 0 30px color-mix(in srgb,var(--team) 32%,transparent);
+}
+.signin-dot{
+  background:radial-gradient(circle at 34% 30%,#fff6,transparent 60%),var(--team);
+  box-shadow:0 0 24px var(--team);
+}
+.signin-card b{font-family:var(--display);letter-spacing:.05em}
+.seat.on{filter:drop-shadow(0 0 8px var(--team))}
+
+.qr-pop{border-top:none;border-left:3px solid var(--team)}
+.qr-pin b{color:var(--accent-2);text-shadow:0 0 20px rgba(227,178,74,.55)}
+.qr-seat{background:var(--plaque-2);border:1px solid rgba(255,255,255,.07)}
+.qr-url{font-family:var(--mono)}
+
+/* ============================================================
+   JOIN / ROLES
+   ============================================================ */
+.join{background:transparent}
+.join-card{border-top:none;border-left:3px solid var(--team,var(--accent))}
+.join-emblem{filter:drop-shadow(0 0 24px var(--team,var(--accent)))}
+.role-card{
+  background:var(--plaque-2);
+  border:1px solid rgba(255,255,255,.07);
+}
+.role-card b{font-family:var(--display);letter-spacing:.05em;color:var(--text)}
+.role-card:hover:not(.taken){border-color:var(--line);transform:translateX(3px)}
+.role-card.on{
+  border-color:var(--team,var(--accent));
+  box-shadow:0 0 0 1px var(--team,var(--accent)),0 0 26px color-mix(in srgb,var(--team,var(--accent)) 38%,transparent);
+}
+
+/* ============================================================
+   BOARD
+   ============================================================ */
+.hexboard{
+  background:transparent;
+  border-radius:var(--radius);
+}
+.board-screen .hexboard{border-radius:0}
+
+.sheet{
+  border-radius:20px 20px 0 0;
+  box-shadow:0 -18px 50px rgba(0,0,0,.6);
+}
+.picker-card{border-radius:12px}
+.picker-card:hover{border-color:var(--line)}
+.resource-row{
+  background:var(--plaque-2);
+  border:1px solid rgba(255,255,255,.06);
+  border-radius:12px;
+}
+.token.avail{background:var(--good);box-shadow:0 0 8px var(--good)}
+.token.used{background:#7A3A38}
+
+.ref-card{border-radius:var(--radius)}
+.status{background:rgba(227,178,74,.16);color:var(--accent-2);border:1px solid var(--line)}
+.status.unknown{background:rgba(216,105,94,.16);color:#FFB9B3;border-color:rgba(216,105,94,.4)}
+.log-row{border-bottom:1px solid rgba(255,255,255,.05)}
+
+/* ============================================================
+   PROJECTOR — read from across the room
+   ============================================================ */
+.proj,.projector-mode{background:var(--bg)}
+.proj-side,.projector-side{
+  border-left:1px solid var(--line);
+  border-radius:0;
+  backdrop-filter:blur(14px);
+  -webkit-backdrop-filter:blur(14px);
+}
+.proj-title h1{
+  font-family:var(--display);
+  color:var(--accent-2);
+  text-shadow:0 3px 22px #000,0 0 44px rgba(227,178,74,.34);
+}
+.proj-act::after{content:var(--act-name)}
+.proj-turn{
+  border-left:6px solid var(--team,var(--accent));
+  background:linear-gradient(100deg,rgba(9,20,14,.92),rgba(9,20,14,.45));
+  backdrop-filter:blur(6px);
+}
+.proj-turn b{font-family:var(--display)}
+.pteam{background:var(--plaque-2);border-left:5px solid var(--team)}
+.pteam-head b{font-family:var(--display);letter-spacing:.04em}
+.pgate{background:var(--plaque-2);border:1px solid var(--line)}
+.pgate span{font-family:var(--body);font-weight:600}
+.proj-team,.proj-endgame{background:var(--plaque-2);border:1px solid rgba(255,255,255,.06)}
+
+/* ============================================================
+   HOW TO PLAY — the guide overlay
+   ============================================================ */
+.guide{
+  background:rgba(3,8,5,.72);
+  backdrop-filter:blur(16px) saturate(1.1);
+  -webkit-backdrop-filter:blur(16px) saturate(1.1);
+  animation:modalFade .35s var(--ease);
+}
+/* drifting hexes pick up the act colour */
+.ghex{
+  color:color-mix(in srgb,var(--accent) 16%,transparent);
+  text-shadow:0 0 22px color-mix(in srgb,var(--bob-glow) 25%,transparent);
+}
+
+.guide-head{
+  padding:18px 20px;
+  border-bottom:1px solid var(--line);
+}
+.guide-head b{
+  font-family:var(--display);
+  font-weight:600;
+  font-size:1.15rem;
+  letter-spacing:.12em;
+  text-transform:uppercase;
+  color:var(--accent-2);
+}
+
+.guide-body{max-width:620px;padding:14px 18px 28px;gap:12px}
+.g-title{
+  font-family:var(--display);
+  font-size:clamp(1.15rem,3vw,1.5rem);
+  letter-spacing:.1em;
+  text-transform:uppercase;
+  color:var(--text);
+  margin:14px 0 6px;
+}
+.g-sub{
+  font-family:var(--body);
+  font-weight:600;
+  font-size:.62em;
+  letter-spacing:.22em;
+  color:var(--accent);
+}
+
+/* each step is a carved plaque, same as the rest of the app */
+.g-step{
+  position:relative;
+  gap:14px;
+  padding:16px 18px;
+  border-radius:14px;
+  background:
+    linear-gradient(180deg,rgba(255,255,255,.04),transparent 30%),
+    var(--plaque);
+  border:1px solid var(--line);
+  box-shadow:
+    inset 0 1px 0 rgba(247,222,154,.1),
+    0 12px 30px rgba(0,0,0,.4);
+  transition:border-color .3s var(--ease),transform .3s var(--ease);
+}
+.g-step:hover{border-color:rgba(227,178,74,.34);transform:translateY(-2px)}
+.g-step b{
+  font-family:var(--display);
+  font-weight:600;
+  letter-spacing:.04em;
+  color:var(--text);
+  font-size:1rem;
+}
+.g-step p{color:var(--muted);font-size:.88rem;line-height:1.55}
+
+.g-num{
+  flex:0 0 28px;height:28px;
+  font-family:var(--mono);
+  font-weight:700;
+  color:#160E02;
+  background:linear-gradient(160deg,var(--accent-2),var(--accent) 55%,var(--accent-dim));
+  box-shadow:0 3px 12px rgba(227,178,74,.4),inset 0 1px 0 rgba(255,255,255,.55);
+}
+
+.g-golden{
+  border-color:rgba(227,178,74,.45);
+  box-shadow:0 0 30px rgba(227,178,74,.2),inset 0 1px 0 rgba(247,222,154,.14);
+}
+.g-golden b{color:var(--accent-2)}
+.g-playtest{
+  display:inline-block;margin-left:8px;
+  font:600 .6rem var(--body);
+  letter-spacing:.16em;text-transform:uppercase;
+  color:var(--accent);
+  border:1px solid var(--line);border-radius:6px;padding:3px 7px;
+}
+.g-token{background:var(--good);box-shadow:0 0 14px var(--good)}
+.g-move b{font-size:.92rem;min-width:118px}
+.g-wincard.gold{
+  border-color:var(--accent);
+  box-shadow:0 0 34px rgba(227,178,74,.28),inset 0 1px 0 rgba(247,222,154,.16);
+}
+.g-wincard.lose{border-color:rgba(216,105,94,.5)}
+
+.guide-nav{
+  background:linear-gradient(0deg,rgba(9,20,14,.94),rgba(9,20,14,.62));
+  border-top:1px solid var(--line);
+  backdrop-filter:blur(14px);
+  -webkit-backdrop-filter:blur(14px);
+}
+.gnav{
+  font-family:var(--body);
+  font-weight:600;
+  font-size:.7rem;
+  letter-spacing:.06em;
+  padding:12px 2px 14px;
+  transition:color .25s var(--ease);
+}
+.gnav:hover{color:var(--text)}
+.gnav.active{color:var(--accent);text-shadow:0 0 14px rgba(227,178,74,.5)}
+.gnav.active .gnav-icon{filter:drop-shadow(0 0 8px rgba(227,178,74,.6))}
+
+/* the guide covers the screen, so keep the world HUD out of its nav */
+.guide ~ .theme-hud{bottom:calc(78px + env(safe-area-inset-bottom))}
+
+/* ============================================================
+   WORLD HUD — the Act and the sound, on every screen
+   ============================================================ */
+.theme-hud{
+  position:fixed;
+  right:14px;
+  bottom:calc(14px + env(safe-area-inset-bottom));
+  z-index:70;
+  display:flex;
+  flex-direction:column-reverse;
+  align-items:flex-end;
+  gap:8px;
+  pointer-events:none;
+}
+.theme-hud > *{pointer-events:auto}
+
+.hud-toggle{
+  width:42px;height:42px;
+  border-radius:50%;
+  padding:0;
+  font-size:1rem;
+  color:var(--accent);
+  box-shadow:0 8px 26px rgba(0,0,0,.5);
+}
+.theme-hud.open .hud-toggle{
+  background:linear-gradient(160deg,var(--accent-2),var(--accent) 55%,var(--accent-dim));
+  color:#160E02;
+  border-color:transparent;
+}
+
+.hud-panel{
+  display:flex;
+  flex-direction:column;
+  align-items:stretch;
+  gap:7px;
+  max-height:0;
+  opacity:0;
+  overflow:hidden;
+  transition:max-height .36s var(--ease),opacity .28s var(--ease);
+}
+.theme-hud.open .hud-panel{max-height:220px;opacity:1}
+
+.hud-btn{
+  font:600 .72rem var(--body);
+  letter-spacing:.08em;
+  color:var(--muted);
+  background:rgba(0,0,0,.55);
+  border:1px solid rgba(255,255,255,.09);
+  border-radius:22px;
+  padding:10px 15px;
+  cursor:pointer;
+  white-space:nowrap;
+  backdrop-filter:blur(10px);
+  -webkit-backdrop-filter:blur(10px);
+  transition:all .26s var(--ease);
+}
+.hud-btn:hover{color:var(--accent-2);border-color:var(--line)}
+.hud-btn.on{color:var(--accent);border-color:var(--line)}
+
+.hud-act{
+  display:flex;
+  flex-direction:column;
+  align-items:flex-end;
+  gap:1px;
+  padding:9px 16px;
+}
+.hud-act b{
+  font-family:var(--display);
+  font-size:.86rem;
+  letter-spacing:.1em;
+  color:var(--accent-2);
+}
+.hud-act i{
+  font-style:normal;
+  font-size:.62rem;
+  letter-spacing:.2em;
+  text-transform:uppercase;
+  color:var(--muted);
+}
+
+/* keep the HUD clear of the tab bar on phones */
+@media (max-width:700px){
+  .app .theme-hud{bottom:calc(66px + env(safe-area-inset-bottom))}
+}
+
+/* ============================================================
+   ENTRANCE — add class="rise d1".."d5"
+   ============================================================ */
+.rise{opacity:0;transform:translateY(22px);animation:riseIn .95s var(--ease) forwards}
+@keyframes riseIn{to{opacity:1;transform:none}}
+.d1{animation-delay:.12s}.d2{animation-delay:.32s}.d3{animation-delay:.5s}
+.d4{animation-delay:.66s}.d5{animation-delay:.8s}
+
+@media (prefers-reduced-motion:reduce){
+  *,*::before,*::after{animation-duration:.01ms!important;transition-duration:.01ms!important}
+  .rise{opacity:1;transform:none}
+}
