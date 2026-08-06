@@ -1836,3 +1836,114 @@ html{background:var(--bg)}
 .raid-bar ul{margin:0;padding-left:18px;display:flex;flex-direction:column;gap:2px}
 .raid-bar li{color:var(--muted);font-size:.78rem;line-height:1.35}
 @media (prefers-reduced-motion: reduce){.edge-alert{animation:none}}
+
+/* ============================================================
+   ROUND 29 — THE JOIN SCREEN
+   This is the first thing twenty people see, on a phone, in a
+   room, in a hurry. It had almost no layout rules: labels sat
+   beside their inputs, the role list ran as unreadable rows,
+   and the PIN field shared a line with the button.
+   ============================================================ */
+
+.join{
+  position:relative;
+  z-index:1;
+  display:grid;
+  place-items:start center;
+  min-height:100%;
+  padding:16px 14px calc(28px + env(safe-area-inset-bottom));
+  overflow-y:auto;
+}
+.join-card{
+  display:flex;
+  flex-direction:column;
+  align-items:stretch;
+  gap:10px;
+  width:min(440px,100%);
+  padding:20px 18px;
+  border-radius:var(--radius);
+}
+.join-emblem{font-size:1.5rem;line-height:1;color:var(--team,var(--accent))}
+.join-card h1{
+  margin:0;
+  font-size:clamp(1.8rem,8vw,2.4rem);
+  line-height:1.05;
+  color:var(--team,var(--accent-2));
+}
+.join-card > .muted{margin:0}
+
+.join-label{
+  margin-top:8px;
+  font-size:.62rem;
+  letter-spacing:.2em;
+  text-transform:uppercase;
+  color:var(--muted);
+}
+.join-card input{
+  width:100%;
+  height:48px;
+  padding:0 14px;
+  border:1px solid var(--line);
+  border-radius:12px;
+  background:var(--plaque-2);
+  color:var(--text);
+  font-family:var(--body);
+  font-size:1rem;   /* 16px stops iOS zooming the page on focus */
+}
+.join-card input:focus{border-color:var(--team,var(--accent));outline:none}
+.join-pin{
+  font-family:var(--mono) !important;
+  letter-spacing:.5em;
+  text-align:center;
+}
+
+/* one role per row: tap target first, explanation second */
+.role-grid{
+  display:flex;
+  flex-direction:column;
+  gap:6px;
+}
+.role-card{
+  display:grid;
+  grid-template-columns:auto 1fr;
+  grid-template-rows:auto auto;
+  column-gap:11px;
+  row-gap:1px;
+  align-items:center;
+  width:100%;
+  padding:11px 13px;
+  border:1px solid var(--line);
+  border-radius:14px;
+  background:var(--plaque-2);
+  color:var(--text);
+  text-align:left;
+  cursor:pointer;
+  transition:border-color .18s var(--ease),background .18s var(--ease);
+}
+.role-icon{grid-row:1 / span 2;font-size:1.5rem;line-height:1}
+.role-card b{font-size:.95rem;letter-spacing:.02em}
+.role-blurb{
+  font-size:.76rem;
+  line-height:1.3;
+  color:var(--muted);
+}
+.role-card.on{
+  border-color:var(--team,var(--accent));
+  background:color-mix(in srgb,var(--team,#888) 20%,var(--plaque-2));
+  box-shadow:0 0 0 1px var(--team,var(--accent));
+}
+.role-card.taken{opacity:.42;cursor:not-allowed}
+.role-card.taken .role-blurb{color:var(--danger)}
+
+.join-card .primary{
+  width:100%;
+  height:52px;
+  margin-top:6px;
+  font-size:1.02rem;
+}
+.join-card .chip{align-self:center;margin-top:2px}
+.join-error{margin:0;font-size:.84rem;color:var(--danger);text-align:center}
+
+.admin-session{border-color:var(--accent-dim)}
+.admin-session .home-report{justify-content:flex-start;margin-top:2px}
+.admin-session .home-reset{align-self:flex-start;margin-top:4px}

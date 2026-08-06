@@ -1,17 +1,7 @@
 import { useStore } from "../state/store";
 import { actInfo } from "../data/progress";
 import { RULES } from "../data/rules";
-import { useEffect, useState } from "react";
 import { sfx, unlockAudio } from "../audio/sfx";
-import { sessionCode } from "../net/supabase";
-import {
-  downloadRaw,
-  downloadReport,
-  fetchEvents,
-  listSessions,
-  type ArchivedSession,
-} from "../data/archive";
-import { reduceEvents } from "../state/reduce";
 
 /**
  * The front door.
@@ -34,24 +24,7 @@ export default function HomeScreen({
   onEnter: () => void;
   onGuide: () => void;
 }) {
-  const { state, events, resetSession, sync } = useStore();
-  const code = sessionCode();
-  const [past, setPast] = useState<ArchivedSession[]>([]);
-  const [busy, setBusy] = useState<string | null>(null);
-
-  useEffect(() => {
-    void listSessions().then(setPast);
-  }, []);
-
-  /* Rebuild a finished session from its rows and hand back the debrief. */
-  const pull = async (c: string, raw: boolean) => {
-    setBusy(c);
-    const evs = await fetchEvents(c);
-    setBusy(null);
-    if (evs.length === 0) return alert(`No moves stored for session ${c}.`);
-    if (raw) downloadRaw(c, evs);
-    else downloadReport(c, reduceEvents(evs), evs);
-  };
+  const { state, sync } = useStore();
   const live = state.created;
   const team = joinTeamId ? state.teams[joinTeamId] : undefined;
   const info = live ? actInfo(state) : null;
@@ -62,17 +35,6 @@ export default function HomeScreen({
     onEnter();
   };
 
-  const startOver = () => {
-    if (
-      !confirm(
-        "Clear this session and start a new one?\n\nEvery team, tile and resource is wiped for all devices. This cannot be undone.",
-      )
-    )
-      return;
-    unlockAudio();
-    sfx.crumble();
-    resetSession();
-  };
 
   return (
     <div className="home">
@@ -134,24 +96,6 @@ export default function HomeScreen({
             <button className="primary home-go" onClick={enter}>
               {joinTeamId ? "Join the table →" : "Continue the session →"}
             </button>
-            <p className="home-sessioncode">
-              Session <b>{code}</b>
-            </p>
-            <div className="home-report">
-              <button
-                className="chip"
-                onClick={() => downloadReport(code, state, events)}
-                title="Markdown debrief: economies, roster, prompts and the full move log"
-              >
-                📄 Download report
-              </button>
-              <button className="chip" onClick={() => downloadRaw(code, events)} title="Raw event log">
-                ⤓ Raw log
-              </button>
-            </div>
-            <button className="chip home-reset" onClick={startOver}>
-              End session and start a new one
-            </button>
           </div>
         ) : (
           <div className="home-card">
@@ -166,45 +110,6 @@ export default function HomeScreen({
           </div>
         )}
 
-        {past.length > 0 && (
-          <div className="home-card past">
-            <span className="home-tag">Past sessions</span>
-            <p className="muted small">
-              Ending a session never deletes it — the moves stay in the database, so a
-              debrief can be pulled out weeks later.
-            </p>
-            <ul className="past-list">
-              {past.map((p) => (
-                <li key={p.session_code}>
-                  <div className="past-meta">
-                    <b>{p.session_code}</b>
-                    <span>{p.title || (p.team_names ?? []).join(" · ") || "—"}</span>
-                    <i>
-                      {new Date(p.ended_at).toLocaleDateString()} · {p.rounds ?? 0} rounds ·{" "}
-                      {p.outcome ?? "unfinished"}
-                    </i>
-                  </div>
-                  <div className="past-actions">
-                    <button
-                      className="chip"
-                      disabled={busy === p.session_code}
-                      onClick={() => pull(p.session_code, false)}
-                    >
-                      {busy === p.session_code ? "…" : "📄"}
-                    </button>
-                    <button
-                      className="chip"
-                      disabled={busy === p.session_code}
-                      onClick={() => pull(p.session_code, true)}
-                    >
-                      ⤓
-                    </button>
-                  </div>
-                </li>
-              ))}
-            </ul>
-          </div>
-        )}
 
         <button className="chip home-guide" onClick={onGuide}>
           ❓ How to play

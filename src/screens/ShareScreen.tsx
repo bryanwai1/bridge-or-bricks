@@ -4,8 +4,18 @@ import { useStore } from "../state/store";
 import { isPubliclyReachable, joinUrl } from "../net";
 import { sessionCode } from "../net/supabase";
 
+import {
+  downloadRaw,
+  downloadReport,
+  fetchEvents,
+  listSessions,
+  type ArchivedSession,
+} from "../data/archive";
+import { reduceEvents } from "../state/reduce";
+import { sfx } from "../audio/sfx";
+
 export default function ShareScreen() {
-  const { state } = useStore();
+  const { state, events, resetSession } = useStore();
   /* Only meaningful when developing on localhost: without a relay to ask,
      the machine's LAN address has to be typed in by hand. Deployed, the
      origin already works and this stays null. */
@@ -14,6 +24,33 @@ export default function ShareScreen() {
 
   const cloud = isPubliclyReachable();
   const code = sessionCode();
+  const [past, setPast] = useState<ArchivedSession[]>([]);
+  const [busy, setBusy] = useState<string | null>(null);
+
+  useEffect(() => {
+    void listSessions().then(setPast);
+  }, []);
+
+  /* Rebuild a finished session from its rows and hand back the debrief. */
+  const pull = async (c: string, raw: boolean) => {
+    setBusy(c);
+    const evs = await fetchEvents(c);
+    setBusy(null);
+    if (evs.length === 0) return alert(`No moves stored for session ${c}.`);
+    if (raw) downloadRaw(c, evs);
+    else downloadReport(c, reduceEvents(evs), evs);
+  };
+
+  const endSession = () => {
+    if (
+      !confirm(
+        "End this session and start a new one?\n\nThe board clears on every device. Nothing is deleted — this session is archived and its report stays downloadable below.",
+      )
+    )
+      return;
+    sfx.crumble();
+    resetSession();
+  };
 
 
   useEffect(() => {
@@ -96,6 +133,60 @@ export default function ShareScreen() {
           ? " Running in the cloud already gives you cross-network play, so the Firebase upgrade is no longer needed for this."
           : " Different-wifi / mobile-data play works out of the box when the app is hosted in the cloud."}
       </p>
+    
+      <section className="card admin-session">
+        <b>🎛 Session control</b>
+        <p className="muted small">
+          Only the Facilitator reaches this tab, so the buttons that end or export a
+          session live here rather than on the screen every player sees.
+        </p>
+        <p className="session-code">
+          Session <b>{code}</b>
+        </p>
+        <div className="home-report">
+          <button className="chip" onClick={() => downloadReport(code, state, events)}>
+            📄 Download report
+          </button>
+          <button className="chip" onClick={() => downloadRaw(code, events)}>
+            ⤓ Raw log
+          </button>
+        </div>
+        <button className="chip home-reset" onClick={endSession}>
+          End session and start a new one
+        </button>
+      </section>
+
+      {past.length > 0 && (
+        <section className="card">
+          <b>🗂 Past sessions</b>
+          <p className="muted small">
+            Ending a session never deletes it — the moves stay in the database, so a
+            debrief can be pulled out weeks later.
+          </p>
+          <ul className="past-list">
+            {past.map((p) => (
+              <li key={p.session_code}>
+                <div className="past-meta">
+                  <b>{p.session_code}</b>
+                  <span>{p.title || (p.team_names ?? []).join(" · ") || "—"}</span>
+                  <i>
+                    {new Date(p.ended_at).toLocaleDateString()} · {p.rounds ?? 0} rounds ·{" "}
+                    {p.outcome ?? "unfinished"}
+                  </i>
+                </div>
+                <div className="past-actions">
+                  <button className="chip" disabled={busy === p.session_code} onClick={() => pull(p.session_code, false)}>
+                    {busy === p.session_code ? "…" : "📄"}
+                  </button>
+                  <button className="chip" disabled={busy === p.session_code} onClick={() => pull(p.session_code, true)}>
+                    ⤓
+                  </button>
+                </div>
+              </li>
+            ))}
+          </ul>
+        </section>
+      )}
     </div>
   );
 }
