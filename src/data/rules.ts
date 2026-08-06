@@ -1,3 +1,4 @@
+import { exposures } from "./hazards";
 import type { DerivedState, ProposalItem, ResourceKind, SlotRef, TileState } from "../types";
 import { slotKey } from "../types";
 import { neighbors } from "./board";
@@ -300,6 +301,27 @@ export function planRound(state: DerivedState): RoundPlan {
         note: `🧱 Wall at ${edge} decayed to ${left}`,
       });
     }
+  }
+
+  /* Hazards bleed anyone whose claimed tiles they touch. Damage scales with
+     how much of your territory is exposed, not with the hazard, so a wall on
+     one edge is a partial fix and a wall on every edge is a full one. */
+  for (const e of exposures(state)) {
+    if (e.blocked) continue;
+    const team = state.teams[e.teamId];
+    if (!team) continue;
+    for (const [res, amt] of Object.entries(e.drain)) {
+      if (!amt) continue;
+      items.push({
+        type: "resource/change",
+        payload: { teamId: e.teamId, resource: res, delta: -amt },
+        note: `🐺 ${team.config.name}: ${e.label} at ${e.hazardSlot} raided ${e.victimSlot} −${amt}`,
+      });
+    }
+    maintenanceLog.push(
+      `${team.config.name}: ${e.label} raided ${e.victimSlot}` +
+        (e.edge ? ` — a wall at ${e.edge} would stop it` : " — a wall cannot stop this one"),
+    );
   }
 
   /* Every bridge loses a point each Maintenance Phase, whoever owns it, so

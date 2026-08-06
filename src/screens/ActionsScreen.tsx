@@ -16,6 +16,7 @@ import {
 import { isMuted, sfx, toggleMute, unlockAudio } from "../audio/sfx";
 import CardReveal from "../components/CardReveal";
 import { activeTeamId, canAct, roundComplete } from "../data/turn";
+import { describeBag, exposures, hazardToll } from "../data/hazards";
 import {
   actInfo,
   collapsedTeams,
@@ -193,6 +194,37 @@ export default function ActionsScreen() {
             <div className="act-fill-track">
               <div className="act-fill" style={{ width: `${Math.round(info.progress * 100)}%` }} />
             </div>
+          </div>
+        );
+      })()}
+
+      {(() => {
+        const toll = hazardToll(state);
+        const mine = toll[teamId];
+        const walled = exposures(state).filter((e) => e.teamId === teamId && e.blocked);
+        const open = exposures(state).filter((e) => e.teamId === teamId && !e.blocked);
+        if (!mine && walled.length === 0) return null;
+        return (
+          <div className={mine ? "raid-bar live" : "raid-bar"}>
+            {mine ? (
+              <>
+                <b>
+                  🐺 Raided for {describeBag(mine)} every round
+                </b>
+                <ul>
+                  {open.map((e, i) => (
+                    <li key={i}>
+                      {e.label} at {e.hazardSlot} is reaching your tile at {e.victimSlot} —{" "}
+                      {e.edge
+                        ? `build a wall on ${e.edge} to stop it`
+                        : "a wall will not stop this one"}
+                    </li>
+                  ))}
+                </ul>
+              </>
+            ) : (
+              <b>🧱 Every hazard on your border is walled off.</b>
+            )}
           </div>
         );
       })()}

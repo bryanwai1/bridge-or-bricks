@@ -47,6 +47,8 @@ interface Props {
   sky?: EnvKey;
   /** Slot keys to ring as legal destinations, used by Move mode. */
   highlight?: Set<string>;
+  /** Edge keys to flag as needing a wall. */
+  edgeAlert?: Set<string>;
 }
 
 export interface BoardHandle {
@@ -69,7 +71,7 @@ const MAX_VIEW = MAP_SIZE * 2.8; // pulled right back, mat small in the world
    card art only. Sky360 still uses Three.js for the surrounding world. */
 
 const HexBoard = forwardRef<BoardHandle, Props>(function HexBoard(
-  { state, mode, wallMode, selectedKey, onSelect, rotation = 0, tilt = 0, orbitMode, onOrbit, sky, highlight }: Props,
+  { state, mode, wallMode, selectedKey, onSelect, rotation = 0, tilt = 0, orbitMode, onOrbit, sky, highlight, edgeAlert }: Props,
   handleRef,
 ) {
   const svgRef = useRef<SVGSVGElement>(null);
@@ -471,6 +473,7 @@ const HexBoard = forwardRef<BoardHandle, Props>(function HexBoard(
             return (
               <g
                 key={`edge-${key}`}
+                className={edgeAlert?.has(key) ? "edge-alert" : undefined}
                 transform={`translate(${e.mid.x} ${e.mid.y})`}
                 onPointerUp={() => {
                   if (mode === "edit" && !movedRef.current) onSelect?.({ kind: "edge", key });

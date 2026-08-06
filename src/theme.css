@@ -1812,3 +1812,27 @@ html{background:var(--bg)}
 
 .lan-row{display:flex;flex-direction:column;gap:5px;width:100%;margin:6px 0}
 .lan-row code{font-family:var(--mono);color:var(--accent-2)}
+
+/* ---- hazards ---- */
+.edge-alert{
+  stroke:#D8695E !important;
+  stroke-width:9 !important;
+  opacity:.85;
+  animation:raidPulse 1.4s ease-in-out infinite;
+}
+@keyframes raidPulse{0%,100%{opacity:.4}50%{opacity:.95}}
+
+.raid-bar{
+  display:flex;flex-direction:column;gap:5px;
+  padding:10px 14px;
+  border-left:5px solid var(--good);
+  border-radius:4px 12px 12px 4px;
+  background:var(--plaque-2);
+  font-size:.82rem;
+}
+.raid-bar.live{border-left-color:var(--danger)}
+.raid-bar b{font-size:.92rem}
+.raid-bar.live b{color:var(--danger)}
+.raid-bar ul{margin:0;padding-left:18px;display:flex;flex-direction:column;gap:2px}
+.raid-bar li{color:var(--muted);font-size:.78rem;line-height:1.35}
+@media (prefers-reduced-motion: reduce){.edge-alert{animation:none}}

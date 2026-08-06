@@ -10,6 +10,7 @@ import { roleCanCommit, useStore } from "../state/store";
 import { activeTeamId, canAct } from "../data/turn";
 import { nearestSeat, povRotation, seatOffset, seatOrder, setSeatOffset } from "../data/seats";
 import { ENVIRONMENTS, type EnvKey } from "../world/environments";
+import { wallWouldHelp } from "../data/hazards";
 import type { ResourceKind } from "../types";
 
 /** Camera presets. 0 is the printed mat seen from directly above. */
@@ -273,6 +274,9 @@ export default function BoardScreen() {
     return true;
   };
 
+  /* Edges where a wall would stop a raid this round. */
+  const raidEdges = useMemo(() => wallWouldHelp(state), [state]);
+
   const bridgeTargets = useMemo(() => {
     if (tool !== "bridge") return new Set<string>();
     const out = new Set<string>();
@@ -470,7 +474,9 @@ export default function BoardScreen() {
           {tool === "orbit"
             ? "Drag to spin the board · up and down changes the camera height · double-click resets"
             : tool === "wall"
-              ? "Tap a gap between two tiles to build or clear a wall"
+              ? raidEdges.size > 0
+                ? `Tap a gap to wall it · ${raidEdges.size} edge${raidEdges.size === 1 ? " is" : "s are"} being raided right now`
+                : "Tap a gap between two tiles to build or clear a wall"
               : tool === "bridge"
                 ? bridgeTargets.size > 0
                   ? `Tap a glowing hex to span or repair it · wood ${costLabel(RULES.woodBridge.cost)} · metal ${costLabel(RULES.metalBridge.cost)} · repair ${costLabel(RULES.repair.wood)} · everything lasts 2 rounds`
@@ -533,6 +539,7 @@ export default function BoardScreen() {
           wallMode={wallMode}
           selectedKey={sel?.key ?? null}
           highlight={tool === "bridge" ? bridgeTargets : moveTargets}
+          edgeAlert={tool === "wall" ? raidEdges : undefined}
           onSelect={(s) => {
             if (tool === "move" && s.kind === "slot") {
               doMove(s.key);
