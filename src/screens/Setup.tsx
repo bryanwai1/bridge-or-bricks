@@ -1,7 +1,7 @@
 import { useEffect, useRef, useState } from "react";
 import QRCode from "qrcode";
 import { useStore } from "../state/store";
-import { hashPasscode, unlock } from "../data/admin";
+import { unlock } from "../data/admin";
 import { sessionCode } from "../net/supabase";
 import { sfx, unlockAudio } from "../audio/sfx";
 
@@ -96,21 +96,14 @@ export default function Setup({ onGuide }: { onGuide?: () => void }) {
   const fileRef = useRef<HTMLInputElement>(null);
 
   const totalPlayers = teams.reduce((a, t) => a + t.crew, 0);
-  const [passcode, setPasscode] = useState("");
-  const [passError, setPassError] = useState("");
 
   const patch = (i: number, next: Partial<Draft>) =>
     setTeams((ts) => ts.map((t, j) => (j === i ? { ...t, ...next } : t)));
 
   const start = async () => {
-    if (passcode.trim().length < 4) {
-      setPassError("Set a passcode of at least 4 characters — it is the only thing keeping players out of Facilitator.");
-      return;
-    }
     unlockAudio();
     sfx.round();
-    const adminHash = await hashPasscode(passcode);
-    // whoever opens the session is already through the gate on this device
+    // the passcode is a standing one built into the app, not set per session
     unlock(sessionCode());
     const cfg: TeamConfig[] = teams.map((t, i) => ({
       id: `team-${i + 1}`,
@@ -120,7 +113,7 @@ export default function Setup({ onGuide }: { onGuide?: () => void }) {
       pin: String(Math.floor(1000 + Math.random() * 9000)),
       members: [],
     }));
-    append("session/create", { mode, teams: cfg, planning: true, adminHash }, {
+    append("session/create", { mode, teams: cfg, planning: true }, {
       note: "Session created — Planning Phase begins",
     });
   };
@@ -257,27 +250,6 @@ export default function Setup({ onGuide }: { onGuide?: () => void }) {
           </span>
         </div>
       </div>
-
-      <section className="card rise d4">
-        <b>🔐 Facilitator passcode</b>
-        <p className="muted small">
-          Players join by scanning a QR — no password, on purpose. This passcode guards the
-          Facilitator role, which overrides the turn order, the deck gates and the placement
-          rules, and can see every team's PIN. Write it down; it cannot be recovered.
-        </p>
-        <input
-          className="setup-input"
-          type="text"
-          autoComplete="off"
-          placeholder="Passcode (4+ characters)"
-          value={passcode}
-          onChange={(e) => {
-            setPasscode(e.target.value);
-            setPassError("");
-          }}
-        />
-        {passError && <p className="admin-error">{passError}</p>}
-      </section>
 
       <button className="primary rise d4" onClick={start}>Open the session →</button>
 

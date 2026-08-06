@@ -1,5 +1,5 @@
 import { useState } from "react";
-import { verifyPasscode, unlock } from "../data/admin";
+import { verifyPasscode, unlock, gateIsConfigured } from "../data/admin";
 import { sfx, unlockAudio } from "../audio/sfx";
 
 /**
@@ -20,6 +20,7 @@ export default function AdminGate({
   const [pass, setPass] = useState("");
   const [error, setError] = useState("");
   const [busy, setBusy] = useState(false);
+  const configured = gateIsConfigured(adminHash);
 
   const submit = async () => {
     if (busy) return;
@@ -48,6 +49,12 @@ export default function AdminGate({
           The Facilitator overrides the turn order, the deck gates and the placement rules,
           and can see every team's PIN. Enter the session passcode to continue.
         </p>
+        {!configured && (
+          <p className="admin-error">
+            No passcode is configured. Set <code>VITE_ADMIN_HASH</code> in your environment
+            (and in Vercel), then redeploy — until then the Facilitator role stays locked.
+          </p>
+        )}
         <input
           className="admin-input"
           type="password"
@@ -60,7 +67,7 @@ export default function AdminGate({
           autoFocus
         />
         {error && <p className="admin-error">{error}</p>}
-        <button className="primary" onClick={submit} disabled={busy || !pass.trim()}>
+        <button className="primary" onClick={submit} disabled={busy || !pass.trim() || !configured}>
           {busy ? "Checking…" : "Unlock"}
         </button>
         <button className="chip" onClick={onCancel}>

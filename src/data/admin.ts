@@ -17,15 +17,45 @@
 
 const UNLOCK_KEY = "bob-admin-unlocked";
 
+/**
+ * The standing passcode.
+ *
+ * Set once as VITE_ADMIN_HASH — the SHA-256 of whatever you choose — so the
+ * same passcode works for every session and nobody has to invent a new one at
+ * the start of a workshop. Only the hash is ever built into the bundle, so
+ * reading the JavaScript does not hand anyone the passcode.
+ */
+const GLOBAL_HASH = (import.meta.env.VITE_ADMIN_HASH as string | undefined)
+  ?.trim()
+  .toLowerCase();
+
+export const HAS_GLOBAL_PASSCODE = Boolean(GLOBAL_HASH && GLOBAL_HASH.length === 64);
+
 export async function hashPasscode(pass: string): Promise<string> {
   const data = new TextEncoder().encode(`bob:v1:${pass.trim()}`);
   const digest = await crypto.subtle.digest("SHA-256", data);
   return [...new Uint8Array(digest)].map((b) => b.toString(16).padStart(2, "0")).join("");
 }
 
+/**
+ * A passcode is accepted if it matches the standing one, or a per-session one
+ * if that session set its own.
+ *
+ * When neither is configured this returns false rather than true. An earlier
+ * version allowed everything through when no hash was found, which quietly
+ * left every session created before passcodes existed wide open — a default
+ * that fails closed is the only sane one for a gate.
+ */
 export async function verifyPasscode(pass: string, hash: string | undefined): Promise<boolean> {
-  if (!hash) return true; // session created before passcodes existed
-  return (await hashPasscode(pass)) === hash;
+  const attempt = await hashPasscode(pass);
+  if (GLOBAL_HASH && attempt === GLOBAL_HASH) return true;
+  if (hash && attempt === hash) return true;
+  return false;
+}
+
+/** Nothing configured anywhere — the gate cannot be opened, and says so. */
+export function gateIsConfigured(sessionHash: string | undefined): boolean {
+  return HAS_GLOBAL_PASSCODE || Boolean(sessionHash);
 }
 
 /** Unlocked for this tab only, so a shared laptop does not stay open. */
