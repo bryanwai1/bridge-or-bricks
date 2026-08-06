@@ -10,6 +10,7 @@ import ReferenceScreen from "./screens/ReferenceScreen";
 import ProjectorScreen from "./screens/ProjectorScreen";
 import ShareScreen from "./screens/ShareScreen";
 import GuideScreen from "./screens/GuideScreen";
+import HomeScreen from "./screens/HomeScreen";
 import type { RoleType } from "./types";
 import Backdrop from "./theme/Backdrop";
 import ThemeHud from "./theme/ThemeHud";
@@ -46,7 +47,22 @@ function Shell() {
   );
   const [showGuide, setShowGuide] = useState(false);
 
+  /* Always the front door first. Plain state, never persisted, so every load
+     — refresh, reopen, a phone waking up — lands on Home rather than dropping
+     straight onto the map with no context. */
+  const [entered, setEntered] = useState(false);
+
   if (showGuide) return <GuideScreen onClose={() => setShowGuide(false)} />;
+
+  if (!entered) {
+    return (
+      <HomeScreen
+        joinTeamId={JOIN_TEAM}
+        onEnter={() => setEntered(true)}
+        onGuide={() => setShowGuide(true)}
+      />
+    );
+  }
 
   // Phone join flow: ?team=... and no team identity chosen yet on this device
   if (JOIN_TEAM && identity.teamId !== JOIN_TEAM) {
@@ -115,6 +131,9 @@ function Shell() {
         <button className="chip float-exit" onClick={() => setTab(ROLE_TAB[identity.role])}>
           ← back
         </button>
+        <button className="chip float-home" onClick={() => setEntered(false)} title="Start screen">
+          ⌂
+        </button>
       </div>
     );
   }
@@ -142,6 +161,13 @@ function Shell() {
         </select>
         <span title={`sync: ${sync}`}>{syncBadge}</span>
         <span className="muted small">{state.phase === "planning" ? "📝" : `R${state.round}`}</span>
+        <button
+          className="chip"
+          onClick={() => setEntered(false)}
+          title="Back to the start screen"
+        >
+          ⌂
+        </button>
         <button className="chip" onClick={() => setShowGuide(true)} title="How to play">
           ❓
         </button>
