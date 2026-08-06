@@ -1423,3 +1423,17 @@ html{background:var(--bg)}
   margin-bottom:4px;
 }
 .ending-debrief p{margin:0;font-size:.88rem;line-height:1.45}
+
+/* a placement the rules refused — say why, where the tap happened */
+.place-denied{
+  margin:6px auto 0;
+  padding:8px 14px;
+  max-width:min(420px,92%);
+  border:1px solid var(--danger);
+  border-radius:12px;
+  background:rgba(216,105,94,.12);
+  color:var(--danger);
+  font-size:.82rem;
+  text-align:center;
+  animation:sentIn .22s var(--ease);
+}

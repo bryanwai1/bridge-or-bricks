@@ -110,3 +110,67 @@ export function deckGate(
   }
   return { locked: false };
 }
+
+
+/* ------------------------------------------------------------------ */
+/* PLACEMENT                                                           */
+/* ------------------------------------------------------------------ */
+
+export interface PlaceCheck {
+  ok: boolean;
+  reason?: string;
+}
+
+/**
+ * May this card go on this hex, right now, by this team?
+ *
+ * The single authority for placement. The card picker asks it to decide what
+ * to grey out, and the commit path asks it again before appending the event,
+ * so the two can never disagree — the same reason canAct() exists for turns.
+ *
+ * Deck gates on their own were never enough: nothing stopped a Base going
+ * down in round 6, a team laying a second Base, or an Orange being placed
+ * during the Planning Phase.
+ */
+export function canPlace(
+  state: DerivedState,
+  card: CardDef,
+  slot: SlotRef | undefined,
+  teamId: string | undefined,
+  opts: { isFacilitator?: boolean } = {},
+): PlaceCheck {
+  const planning = state.phase === "planning";
+
+  if (slot && state.tiles[slotKey(slot)]) {
+    return { ok: false, reason: "That hex already has a card on it." };
+  }
+
+  if (card.deck === "base") {
+    if (!planning && !opts.isFacilitator) {
+      return { ok: false, reason: "🔒 Bases are placed in the Planning Phase only." };
+    }
+    if (teamId) {
+      const mine = Object.values(state.tiles).filter(
+        (t) => deckOf(t.cardId) === "base" && t.placedByTeamId === teamId,
+      ).length;
+      if (mine >= 1 && !opts.isFacilitator) {
+        return { ok: false, reason: "🔒 Your team already has a Base on the map." };
+      }
+    }
+    return { ok: true };
+  }
+
+  if (planning && card.deck !== "green" && !opts.isFacilitator) {
+    return {
+      ok: false,
+      reason: "🔒 Planning lays out Bases and the starting Green cards only.",
+    };
+  }
+
+  const gate = deckGate(state, card.deck, slot, teamId);
+  if (gate.locked && !opts.isFacilitator) {
+    return { ok: false, reason: gate.reason };
+  }
+
+  return { ok: true };
+}

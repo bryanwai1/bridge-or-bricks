@@ -3,7 +3,7 @@ import HexBoard, { type BoardHandle, type BoardSelection } from "../components/H
 import CardReveal, { type RevealOrigin } from "../components/CardReveal";
 import CardRing from "../components/CardRing";
 import { CARDS, CARD_BY_ID, DECKS, type CardDef } from "../data/catalog";
-import { deckGate, deckOf, type DeckGate } from "../data/gates";
+import { canPlace, deckGate, deckOf, type DeckGate } from "../data/gates";
 import { RULES, canAfford, canMoveTo, costLabel, isActivated, type CostBag } from "../data/rules";
 import { sfx, unlockAudio } from "../audio/sfx";
 import { roleCanCommit, useStore } from "../state/store";
@@ -169,6 +169,11 @@ export default function BoardScreen() {
      into a proposal. Without a message they just see nothing happen. */
   const viaLeader = !roleCanCommit(identity.role);
   const [sent, setSent] = useState<string | null>(null);
+  const [denied, setDeniedRaw] = useState<string | null>(null);
+  const setDenied = (msg: string) => {
+    setDeniedRaw(msg);
+    window.setTimeout(() => setDeniedRaw(null), 3600);
+  };
   const flash = (what: string) => {
     if (!viaLeader) return;
     setSent(what);
@@ -198,7 +203,17 @@ export default function BoardScreen() {
   }
 
   const placeCard = (c: CardDef, slot: string) => {
-    if (!turn.ok) return sfx.denied();
+    if (!turn.ok) {
+      setDenied(turn.reason ?? "Not your turn.");
+      return sfx.denied();
+    }
+    // asked again at the commit, not just in the picker — the UI is a hint,
+    // this is the rule
+    const rule = canPlace(state, c, sel?.slot, teamId, { isFacilitator });
+    if (!rule.ok) {
+      setDenied(rule.reason ?? "That placement is not allowed.");
+      return sfx.denied();
+    }
     unlockAudio();
     sfx.place();
     flash(`Placing a card at ${slot}`);
@@ -548,9 +563,11 @@ export default function BoardScreen() {
           <CardRing
             cards={pickerCards}
             deckColor={activeDeckColor}
-            isLocked={(c) => Boolean(gates[c.deck]?.locked) && !isFacilitator}
+            isLocked={(c) => !canPlace(state, c, sel.slot, teamId, { isFacilitator }).ok}
             onPlace={(c) => placeCard(c, sel.key)}
           />
+
+          {denied && <p className="place-denied">🚫 {denied}</p>}
 
           {!query && gates[pickerDeck]?.locked ? (
             <p className="gate-msg center">

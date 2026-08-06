@@ -191,10 +191,15 @@ const HexBoard = forwardRef<BoardHandle, Props>(function HexBoard(
   );
 
   const movedRef = useRef(false);
+  const captured = useRef(false);
   const downPos = useRef({ x: 0, y: 0 });
 
   const onPointerDown = (e: React.PointerEvent) => {
-    (e.currentTarget as Element).setPointerCapture?.(e.pointerId);
+    /* Deliberately NOT capturing here. Pointer capture redirects every later
+       pointer event to the capturing element, which means the per-hex
+       onPointerUp handlers below never fire and tapping a tile does nothing.
+       Capture is taken lazily in onPointerMove, once a real drag starts. */
+    captured.current = false;
     pointers.current.set(e.pointerId, { x: e.clientX, y: e.clientY });
     movedRef.current = false;
     downPos.current = { x: e.clientX, y: e.clientY };
@@ -221,8 +226,15 @@ const HexBoard = forwardRef<BoardHandle, Props>(function HexBoard(
     pointers.current.set(e.pointerId, { x: e.clientX, y: e.clientY });
     if (
       Math.abs(e.clientX - downPos.current.x) + Math.abs(e.clientY - downPos.current.y) > 18
-    )
+    ) {
       movedRef.current = true;
+      // now that it is definitely a drag and not a tap, take the pointer so a
+      // re-rendered child cannot drop it mid-gesture
+      if (!captured.current) {
+        captured.current = true;
+        (e.currentTarget as Element).setPointerCapture?.(e.pointerId);
+      }
+    }
 
     /* two fingers: pinch to zoom, twist to spin */
     if (pointers.current.size === 2) {
@@ -281,6 +293,10 @@ const HexBoard = forwardRef<BoardHandle, Props>(function HexBoard(
   };
 
   const onPointerUp = (e: React.PointerEvent) => {
+    if (captured.current) {
+      (e.currentTarget as Element).releasePointerCapture?.(e.pointerId);
+      captured.current = false;
+    }
     pointers.current.delete(e.pointerId);
     if (pointers.current.size < 2) gesture.current = null;
     if (pointers.current.size === 0) drag.current = null;
