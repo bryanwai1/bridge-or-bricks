@@ -69,3 +69,38 @@ create or replace function public.bob_prune_old_sessions()
 returns void language sql as $$
   delete from public.bob_events where created_at < now() - interval '14 days';
 $$;
+
+-- ============================================================
+--  ARCHIVE
+--
+--  Ending a session takes a fresh code rather than deleting rows,
+--  so the events survive. This table is the index over them: what
+--  each past session was, so a facilitator can find and download
+--  a debrief report weeks later without knowing the code by heart.
+-- ============================================================
+
+create table if not exists public.bob_sessions (
+  session_code text primary key,
+  title        text,
+  mode         text,
+  team_names   text[],
+  rounds       integer,
+  outcome      text,
+  event_count  integer,
+  started_at   timestamptz,
+  ended_at     timestamptz not null default now()
+);
+
+create index if not exists bob_sessions_ended_idx
+  on public.bob_sessions (ended_at desc);
+
+alter table public.bob_sessions enable row level security;
+
+drop policy if exists "read sessions" on public.bob_sessions;
+create policy "read sessions"  on public.bob_sessions for select using (true);
+
+drop policy if exists "write sessions" on public.bob_sessions;
+create policy "write sessions" on public.bob_sessions for insert with check (true);
+
+drop policy if exists "amend sessions" on public.bob_sessions;
+create policy "amend sessions" on public.bob_sessions for update using (true);

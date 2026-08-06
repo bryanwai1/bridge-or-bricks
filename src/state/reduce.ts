@@ -62,6 +62,7 @@ export function applyEvent(st: DerivedState, ev: GameEvent): DerivedState {
           actionTokens: { available: ACTION_TOKENS_PER_TURN, used: 0 },
         };
       }
+      if (p["adminHash"]) s.adminHash = p["adminHash"] as string;
       break;
     }
     case "team/join": {

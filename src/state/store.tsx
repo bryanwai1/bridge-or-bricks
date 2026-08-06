@@ -11,6 +11,7 @@ import {
 } from "react";
 import type { DerivedState, EventType, GameEvent, RoleType, SessionFile, Visibility } from "../types";
 import { reduceEvents } from "./reduce";
+import { archiveSession } from "../data/archive";
 import {
   EVENTS_TABLE,
   rotateSessionCode,
@@ -121,6 +122,7 @@ export function StoreProvider({ children }: { children: ReactNode }) {
   const [sync, setSync] = useState<SyncStatus>("connecting");
   const [identity, setIdentityState] = useState<ActiveIdentity>(loadIdentity);
   const codeRef = useRef<string>(sessionCode());
+  const eventsRef = useRef<GameEvent[]>([]);
   const seqRef = useRef(0);
   seqRef.current = events.length ? events[events.length - 1].seq : 0;
 
@@ -236,6 +238,9 @@ export function StoreProvider({ children }: { children: ReactNode }) {
   }, [code]);
 
   const state = useMemo(() => reduceEvents(events), [events]);
+  useEffect(() => {
+    eventsRef.current = events;
+  }, [events]);
 
   const mkEvent = useCallback(
     (
@@ -343,6 +348,8 @@ export function StoreProvider({ children }: { children: ReactNode }) {
    * clears the wrong table by mistake.
    */
   const resetSession = useCallback(() => {
+    // index this session before the code rotates, so it stays findable
+    void archiveSession(codeRef.current, reduceEvents(eventsRef.current), eventsRef.current);
     setEvents([]);
     sessionStorage.removeItem(IDENTITY_KEY);
     localStorage.removeItem(STORAGE_KEY);

@@ -158,6 +158,8 @@ export interface DerivedState {
   endgameDrawn: string[];
   /** Teams that have entered the Golden Gate, in the order they did. */
   gateEntered: string[];
+  /** SHA-256 of the facilitator passcode, set at session creation. */
+  adminHash?: string;
   /** Last few public notes, for the projector ticker. */
   recentNotes: string[];
 }

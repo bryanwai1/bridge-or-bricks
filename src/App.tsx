@@ -11,6 +11,9 @@ import ProjectorScreen from "./screens/ProjectorScreen";
 import ShareScreen from "./screens/ShareScreen";
 import GuideScreen from "./screens/GuideScreen";
 import HomeScreen from "./screens/HomeScreen";
+import AdminGate from "./components/AdminGate";
+import { isUnlocked, lock } from "./data/admin";
+import { sessionCode } from "./net/supabase";
 import type { RoleType } from "./types";
 import Backdrop from "./theme/Backdrop";
 import ThemeHud from "./theme/ThemeHud";
@@ -52,7 +55,36 @@ function Shell() {
      straight onto the map with no context. */
   const [entered, setEntered] = useState(false);
 
+  /* Facilitator is the only role that can override the rules, so it is the
+     only one behind a passcode. Unlock lasts for this tab only. */
+  const code = sessionCode();
+  const [gateOpen, setGateOpen] = useState(false);
+  const adminOk = isUnlocked(code);
+
+  /* A device that somehow holds the facilitator role without being unlocked
+     — a stale sessionStorage identity, a shared link — is put back to
+     follower rather than trusted. */
+  useEffect(() => {
+    if (identity.role === "facilitator" && !adminOk && state.created) {
+      setIdentity({ ...identity, role: "follower" });
+    }
+  }, [identity, adminOk, state.created, setIdentity]);
+
   if (showGuide) return <GuideScreen onClose={() => setShowGuide(false)} />;
+
+  if (gateOpen) {
+    return (
+      <AdminGate
+        adminHash={state.adminHash}
+        sessionCode={code}
+        onPass={() => {
+          setGateOpen(false);
+          setIdentity({ ...identity, role: "facilitator", teamId: null });
+        }}
+        onCancel={() => setGateOpen(false)}
+      />
+    );
+  }
 
   if (!entered) {
     return (
@@ -79,7 +111,7 @@ function Shell() {
     { key: "log", label: "📜 Log" },
     { key: "cards", label: "🃏 Cards" },
     ...(isFacilitator ? [{ key: "share" as Tab, label: "📱 Share" }] : []),
-    { key: "projector", label: "📽 Projector" },
+    ...(isFacilitator ? [{ key: "projector" as Tab, label: "📽 Projector" }] : []),
   ];
   // Phone (QR-joined) devices only see what their role needs
   const PHONE_TABS: Record<RoleType, Tab[]> = {
@@ -147,10 +179,17 @@ function Shell() {
           value={currentKey}
           onChange={(e) => {
             const opt = identityOptions.find((o) => o.key === e.target.value);
-            if (opt) {
-              setIdentity({ teamId: opt.teamId, role: opt.role });
-              setTab(ROLE_TAB[opt.role]);
+            if (!opt) return;
+            // the only role that can override the rules asks for the passcode
+            if (opt.role === "facilitator" && !isUnlocked(code)) {
+              setGateOpen(true);
+              return;
             }
+            if (identity.role === "facilitator" && opt.role !== "facilitator") {
+              lock();
+            }
+            setIdentity({ teamId: opt.teamId, role: opt.role });
+            setTab(ROLE_TAB[opt.role]);
           }}
         >
           {identityOptions.map((o) => (
