@@ -1565,3 +1565,13 @@ html{background:var(--bg)}
 @media (prefers-reduced-motion: reduce){
   .rv-tether,.rv-cone,.rv-vee,.rv-pool{animation:none !important}
 }
+
+/* five tools now — let the strip scroll rather than wrap on a phone */
+.board-toolbar{overflow-x:auto;scrollbar-width:none}
+.board-toolbar::-webkit-scrollbar{display:none}
+.toolbar-modes{flex:0 0 auto}
+@media (max-width:680px){
+  .tmode{padding:7px 8px;font-size:0;gap:0}
+  .tmode i{font-size:1.15rem}
+  .tmode.active{font-size:0}
+}

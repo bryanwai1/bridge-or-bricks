@@ -19,7 +19,6 @@ import {
 } from "../data/board";
 import { CARD_BY_ID } from "../data/catalog";
 import { DECK_BACK, deckOf } from "../data/gates";
-import Board3D from "./Board3D";
 import Sky360 from "./Sky360";
 import type { EnvKey } from "../world/environments";
 
@@ -64,8 +63,9 @@ const PERSPECTIVE = 1500; // must match --board perspective in fx.css
 const MIN_VIEW = MAP_SIZE / 10; // closest zoom
 const MAX_VIEW = MAP_SIZE * 2.8; // pulled right back, mat small in the world
 
-/** Cards that have a diorama on disk — their flat art is hidden once revealed. */
-const MODELLED = new Set(["BASE"]);
+/* The GLB diorama layer is gone. The Base model never lined up with the SVG
+   mat under camera pitch and hid the card art behind it, so tiles are flat
+   card art only. Sky360 still uses Three.js for the surrounding world. */
 
 const HexBoard = forwardRef<BoardHandle, Props>(function HexBoard(
   { state, mode, wallMode, selectedKey, onSelect, rotation = 0, tilt = 0, orbitMode, onOrbit, sky, highlight }: Props,
@@ -368,8 +368,6 @@ const HexBoard = forwardRef<BoardHandle, Props>(function HexBoard(
             const deck = deckOf(tile.cardId) ?? "green";
             const art = tile.faceDown ? DECK_BACK[deck] : card?.art ?? DECK_BACK[deck];
             const popClass = tile.faceDown || isBase ? "tile-pop" : "tile-flip";
-            const modelled =
-              !tile.faceDown && MODELLED.has(isBase ? "BASE" : tile.cardId);
             const ownerColor = tile.placedByTeamId
               ? state.teams[tile.placedByTeamId]?.config.color ?? "#ffd75a"
               : "#ffd75a";
@@ -401,7 +399,6 @@ const HexBoard = forwardRef<BoardHandle, Props>(function HexBoard(
                         width={HEX_W - 10}
                         height={HEX_H - 9}
                         preserveAspectRatio="xMidYMid slice"
-                        opacity={modelled ? 0 : 1}
                       />
                     </g>
                     {tile.disabled && (
@@ -574,17 +571,6 @@ const HexBoard = forwardRef<BoardHandle, Props>(function HexBoard(
           })}
         </g>
       </svg>
-      <Board3D
-        state={state}
-        view={view}
-        rotation={rotation}
-        tilt={tilt}
-        camScale={camScale}
-        camOffset={camOffset}
-        width={box.w}
-        height={box.h}
-        perspective={PERSPECTIVE}
-      />
       <div className="board-haze" aria-hidden />
     </div>
   );

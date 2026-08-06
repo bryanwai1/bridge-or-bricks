@@ -35,7 +35,7 @@ export default function BoardScreen() {
   const [sel, setSel] = useState<BoardSelection | null>(null);
   /* One tool at a time. Two independent toggles (Wall / Orbit) meant four
      states, two of them meaningless, and no way to tell which you were in. */
-  const [tool, setTool] = useState<"tap" | "orbit" | "wall" | "move">("tap");
+  const [tool, setTool] = useState<"tap" | "orbit" | "wall" | "move" | "bridge">("tap");
   const wallMode = tool === "wall";
   const [pickerDeck, setPickerDeck] = useState<CardDef["deck"]>("green");
   const [query, setQuery] = useState("");
@@ -221,6 +221,28 @@ export default function BoardScreen() {
   const wall = sel?.kind === "edge" ? state.walls[sel.key] : undefined;
   const bridges = sel?.kind === "slot" ? state.bridges[sel.key] ?? [] : [];
 
+  /**
+   * Cards that cannot be crossed until they are spanned. Rivers want wood,
+   * Valleys want metal — different costs and durabilities, so the tool picks
+   * the right one rather than asking.
+   */
+  const bridgeNeededAt = (key: string): "wood" | "metal" | null => {
+    const t = state.tiles[key];
+    if (!t || t.faceDown) return null;
+    const built = state.bridges[key] ?? [];
+    if (t.cardId === "GR02" && !built.some((b) => b.type === "wood")) return "wood";
+    if (t.cardId === "GR03" && !built.some((b) => b.type === "metal")) return "metal";
+    return null;
+  };
+
+  const bridgeTargets = useMemo(() => {
+    if (tool !== "bridge") return new Set<string>();
+    const out = new Set<string>();
+    for (const key of Object.keys(state.tiles)) if (bridgeNeededAt(key)) out.add(key);
+    return out;
+     
+  }, [tool, state]);
+
   /** Every hex this team's piece could legally step to right now. */
   const moveTargets = useMemo(() => {
     if (tool !== "move" || !teamId) return new Set<string>();
@@ -307,7 +329,14 @@ export default function BoardScreen() {
 
   const buildBridge = (kind: "wood" | "metal", slot: string) => {
     const spec = kind === "wood" ? RULES.woodBridge : RULES.metalBridge;
-    if (!turn.ok || !canAfford(have, spec.cost)) return sfx.denied();
+    if (!turn.ok) {
+      setDenied(turn.reason ?? "Not your turn.");
+      return sfx.denied();
+    }
+    if (!canAfford(have, spec.cost)) {
+      setDenied(`A ${kind} bridge costs ${costLabel(spec.cost)} — not affordable yet.`);
+      return sfx.denied();
+    }
     unlockAudio();
     sfx.build();
     flash(`${kind} bridge at ${slot}`);
@@ -361,6 +390,7 @@ export default function BoardScreen() {
           {([
             { key: "tap", icon: "👆", label: "Place", on: true },
             { key: "move", icon: "🚶", label: "Move", on: true },
+            { key: "bridge", icon: "🌉", label: "Bridge", on: canEditBoard },
             { key: "wall", icon: "🧱", label: "Wall", on: canEditWalls },
             { key: "orbit", icon: "🔄", label: "Turn", on: true },
           ] as const).map((m) => (
@@ -395,12 +425,20 @@ export default function BoardScreen() {
           )}
         <span className="muted small">
           {tool === "orbit"
-            ? "Drag to spin · up and down raises or lowers the camera · double-click to reset"
-            : wallMode
-              ? "Tap a gap between tiles to build or clear a wall"
-              : canEditBoard
-                ? "Tap a hex to place a tile · pinch to zoom · twist to spin"
-                : "View only — switch to Cartographer to edit"}
+            ? "Drag to spin the board · up and down changes the camera height · double-click resets"
+            : tool === "wall"
+              ? "Tap a gap between two tiles to build or clear a wall"
+              : tool === "bridge"
+                ? bridgeTargets.size > 0
+                  ? `Tap a glowing hex to span it · River needs wood ${costLabel(RULES.woodBridge.cost)} · Valley needs metal ${costLabel(RULES.metalBridge.cost)}`
+                  : "No open River or Valley needs a bridge yet"
+                : tool === "move"
+                  ? moveTargets.size > 0
+                    ? `Tap a glowing hex to step there · ${moveTargets.size} within reach`
+                    : "Nowhere to step — you can only move to an adjacent, face-up hex"
+                  : canEditBoard
+                    ? "Tap a hex to place a card · pinch to zoom · drag to pan"
+                    : "View only — switch to Cartographer to edit"}
         </span>
       </div>
 
@@ -451,10 +489,19 @@ export default function BoardScreen() {
           mode={canEditBoard || canEditWalls ? "edit" : "view"}
           wallMode={wallMode}
           selectedKey={sel?.key ?? null}
-          highlight={moveTargets}
+          highlight={tool === "bridge" ? bridgeTargets : moveTargets}
           onSelect={(s) => {
             if (tool === "move" && s.kind === "slot") {
               doMove(s.key);
+              return;
+            }
+            if (tool === "bridge" && s.kind === "slot") {
+              const need = bridgeNeededAt(s.key);
+              if (!need) {
+                setDenied("Only an open River or Valley can take a bridge.");
+                return sfx.denied();
+              }
+              buildBridge(need, s.key);
               return;
             }
             setSel(s);
