@@ -45,6 +45,8 @@ interface Props {
   onOrbit?: (dx: number, dy: number) => void;
   /** Which world surrounds the table. "none" renders the bare table instead. */
   sky?: EnvKey;
+  /** Slot keys to ring as legal destinations, used by Move mode. */
+  highlight?: Set<string>;
 }
 
 export interface BoardHandle {
@@ -66,7 +68,7 @@ const MAX_VIEW = MAP_SIZE * 2.8; // pulled right back, mat small in the world
 const MODELLED = new Set(["BASE"]);
 
 const HexBoard = forwardRef<BoardHandle, Props>(function HexBoard(
-  { state, mode, wallMode, selectedKey, onSelect, rotation = 0, tilt = 0, orbitMode, onOrbit, sky }: Props,
+  { state, mode, wallMode, selectedKey, onSelect, rotation = 0, tilt = 0, orbitMode, onOrbit, sky, highlight }: Props,
   handleRef,
 ) {
   const svgRef = useRef<SVGSVGElement>(null);
@@ -509,6 +511,15 @@ const HexBoard = forwardRef<BoardHandle, Props>(function HexBoard(
             const chars = state.teamOrder.filter((tid) => state.teams[tid].characterAt === key);
             return (
               <g key={`ov-${key}`}>
+                {highlight?.has(key) && (
+                  <polygon
+                    className="move-target"
+                    points={hexPoints(c.x, c.y, HEX_W - 2, HEX_H - 2)}
+                    fill="rgba(127,201,138,0.16)"
+                    stroke="#7FC98A"
+                    strokeWidth={5}
+                  />
+                )}
                 {selectedKey === key && (
                   <polygon
                     points={hexPoints(c.x, c.y, HEX_W + 6, HEX_H + 5)}
@@ -537,7 +548,9 @@ const HexBoard = forwardRef<BoardHandle, Props>(function HexBoard(
                     transform={`translate(${c.x + (i - (chars.length - 1) / 2) * 30} ${c.y + 26}) ${upright}`}
                     filter={tilted ? "url(#tileLift)" : undefined}
                   >
-                    <circle r={15} fill={teamColor(tid)} stroke="#181410" strokeWidth={3} />
+                    <ellipse cx={0} cy={14} rx={16} ry={5} fill="#000" opacity={0.4} />
+                    <circle r={16} fill={teamColor(tid)} stroke="#181410" strokeWidth={3} />
+                    <circle r={16} fill="none" stroke="#fff" strokeWidth={1.2} opacity={0.45} />
                     <text x={0} y={5} textAnchor="middle" fontSize="15" fill="#fff" fontWeight={700}>
                       {state.teams[tid].config.name.slice(0, 1).toUpperCase()}
                     </text>

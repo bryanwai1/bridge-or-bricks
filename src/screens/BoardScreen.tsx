@@ -1,4 +1,4 @@
-import { useEffect, useRef, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import HexBoard, { type BoardHandle, type BoardSelection } from "../components/HexBoard";
 import CardReveal, { type RevealOrigin } from "../components/CardReveal";
 import CardRing from "../components/CardRing";
@@ -30,7 +30,10 @@ const costItems = (teamId: string, cost: CostBag, label: string) =>
 export default function BoardScreen() {
   const { state, identity, append, appendGroup } = useStore();
   const [sel, setSel] = useState<BoardSelection | null>(null);
-  const [wallMode, setWallMode] = useState(false);
+  /* One tool at a time. Two independent toggles (Wall / Orbit) meant four
+     states, two of them meaningless, and no way to tell which you were in. */
+  const [tool, setTool] = useState<"tap" | "orbit" | "wall" | "move">("tap");
+  const wallMode = tool === "wall";
   const [pickerDeck, setPickerDeck] = useState<CardDef["deck"]>("green");
   const [query, setQuery] = useState("");
   const [reveal, setReveal] = useState<{ cardId: string; slot: string; subtitle: string; origin: RevealOrigin | null } | null>(null);
@@ -38,7 +41,6 @@ export default function BoardScreen() {
   const [rotation, setRotation] = useState(0);
   const [tilt, setTilt] = useState(() => Number(localStorage.getItem("bob-tilt") ?? 0));
   const [showCam, setShowCam] = useState(false);
-  const [orbit, setOrbit] = useState(false);
   const [sky, setSky] = useState<EnvKey>(
     () => (localStorage.getItem("bob-env") as EnvKey) ?? "grove",
   );
@@ -194,6 +196,35 @@ export default function BoardScreen() {
   const wall = sel?.kind === "edge" ? state.walls[sel.key] : undefined;
   const bridges = sel?.kind === "slot" ? state.bridges[sel.key] ?? [] : [];
 
+  /** Every hex this team's piece could legally step to right now. */
+  const moveTargets = useMemo(() => {
+    if (tool !== "move" || !teamId) return new Set<string>();
+    const out = new Set<string>();
+    for (const key of Object.keys(state.tiles)) {
+      if (canMoveTo(state, teamId, key).ok) out.add(key);
+    }
+    return out;
+  }, [tool, teamId, state]);
+
+  const doMove = (key: string) => {
+    const check = canMoveTo(state, teamId, key);
+    if (!turn.ok) {
+      setDenied(turn.reason ?? "Not your turn.");
+      return sfx.denied();
+    }
+    if (!check.ok) {
+      setDenied(check.reason ?? "You cannot step there.");
+      return sfx.denied();
+    }
+    unlockAudio();
+    sfx.tap();
+    flash(`Move to ${key}`);
+    const claimed = isActivated(state.tiles[key], teamId);
+    append("character/move", { teamId, slot: key }, {
+      note: `${team?.config.name ?? "Team"} moved to ${key}${claimed ? "" : " — tile claimed"}`,
+    });
+  };
+
   const close = () => setSel(null);
   const have = team?.resources ?? { brick: 0, supply: 0, metal: 0 };
 
@@ -301,24 +332,28 @@ export default function BoardScreen() {
       )}
 
       <div className="board-toolbar">
-        <button
-          className={wallMode ? "chip active" : "chip"}
-          onClick={() => {
-            sfx.tap();
-            setWallMode(!wallMode);
-            setSel(null);
-          }}
-          disabled={!canEditWalls}
-        >
-          🧱 Wall mode
-        </button>
-        <button
-          className={orbit ? "chip active" : "chip"}
-          onClick={() => { sfx.tap(); setOrbit((o) => !o); }}
-          title="Drag the board to spin it and change the camera height"
-        >
-          🔄 Orbit
-        </button>
+        <div className="toolbar-modes" role="group" aria-label="Board tool">
+          {([
+            { key: "tap", icon: "👆", label: "Place", on: true },
+            { key: "move", icon: "🚶", label: "Move", on: true },
+            { key: "wall", icon: "🧱", label: "Wall", on: canEditWalls },
+            { key: "orbit", icon: "🔄", label: "Turn", on: true },
+          ] as const).map((m) => (
+            <button
+              key={m.key}
+              className={tool === m.key ? "tmode active" : "tmode"}
+              disabled={!m.on}
+              onClick={() => {
+                sfx.tap();
+                setTool(m.key);
+                setSel(null);
+              }}
+            >
+              <i>{m.icon}</i>
+              {m.label}
+            </button>
+          ))}
+        </div>
         {!turn.ok && state.phase !== "planning" && (
           <span className={turn.waiting ? "turn-pill waiting" : "turn-pill"}>
             {active ? `⏳ ${state.teams[active]?.config.name ?? ""} · ` : "⏳ "}
@@ -334,7 +369,7 @@ export default function BoardScreen() {
             </span>
           )}
         <span className="muted small">
-          {orbit
+          {tool === "orbit"
             ? "Drag to spin · up and down raises or lowers the camera · double-click to reset"
             : wallMode
               ? "Tap a gap between tiles to build or clear a wall"
@@ -391,10 +426,17 @@ export default function BoardScreen() {
           mode={canEditBoard || canEditWalls ? "edit" : "view"}
           wallMode={wallMode}
           selectedKey={sel?.key ?? null}
-          onSelect={(s) => setSel(s)}
+          highlight={moveTargets}
+          onSelect={(s) => {
+            if (tool === "move" && s.kind === "slot") {
+              doMove(s.key);
+              return;
+            }
+            setSel(s);
+          }}
           rotation={rotation}
           tilt={tilt}
-          orbitMode={orbit}
+          orbitMode={tool === "orbit"}
           onOrbit={onOrbit}
           sky={sky}
         />

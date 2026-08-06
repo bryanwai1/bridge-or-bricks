@@ -1437,3 +1437,95 @@ html{background:var(--bg)}
   text-align:center;
   animation:sentIn .22s var(--ease);
 }
+
+/* ============================================================
+   ROUND 18 — PICKER, TOOLS, PIECES
+   ============================================================ */
+
+/* ---------- the card picker ---------- */
+/* It was translucent enough that the toolbar and the planning banner
+   showed through it, and the search field stretched as a flex child. */
+
+.picker-overlay{
+  background:
+    radial-gradient(ellipse at 50% 40%, rgba(16,26,20,.99) 0%, rgba(4,8,6,1) 100%);
+  padding-bottom:env(safe-area-inset-bottom);
+}
+.picker-head{
+  flex:0 0 auto;
+  padding:14px 16px 10px;
+  border-bottom:1px solid var(--line);
+}
+.picker-head b{font-family:var(--display);font-size:1.05rem;letter-spacing:.04em}
+
+.picker-overlay .card-search{
+  flex:0 0 auto;
+  align-self:center;
+  width:min(380px,calc(100% - 32px));
+  height:42px;
+  margin:12px 0 0;
+  padding:0 14px;
+  font-size:.92rem;
+  border-radius:999px;
+  background:var(--plaque-2);
+  border:1px solid var(--line);
+}
+.picker-overlay .card-search:focus{border-color:var(--accent-dim)}
+
+.picker-decks{flex:0 0 auto;gap:6px;padding:10px 12px calc(14px + env(safe-area-inset-bottom))}
+.picker-decks .chip.deck{padding:9px 14px;font-size:.82rem}
+
+/* ---------- board tool modes ---------- */
+
+.toolbar-modes{
+  display:flex;
+  flex:0 0 auto;
+  gap:2px;
+  padding:3px;
+  border:1px solid var(--line);
+  border-radius:12px;
+  background:var(--plaque-2);
+}
+.tmode{
+  display:flex;
+  align-items:center;
+  gap:5px;
+  padding:7px 11px;
+  border:none;
+  border-radius:9px;
+  background:none;
+  color:var(--muted);
+  font-family:var(--body);
+  font-size:.78rem;
+  cursor:pointer;
+  white-space:nowrap;
+  transition:background .18s var(--ease),color .18s var(--ease);
+}
+.tmode i{font-style:normal;font-size:.95rem;line-height:1}
+.tmode:hover:not(:disabled){color:var(--text)}
+.tmode:disabled{opacity:.32;cursor:not-allowed}
+.tmode.active{
+  background:linear-gradient(180deg,var(--accent-2),var(--accent));
+  color:#221a08;
+  font-weight:600;
+  box-shadow:0 2px 10px rgba(0,0,0,.35);
+}
+@media (max-width:560px){
+  .tmode{padding:7px 8px;font-size:0;gap:0}
+  .tmode i{font-size:1.15rem}
+  .tmode.active{font-size:0}
+}
+
+/* ---------- legal destinations ---------- */
+
+.move-target{
+  animation:moveGlow 1.5s ease-in-out infinite;
+  pointer-events:none;
+}
+@keyframes moveGlow{
+  0%,100%{opacity:.5}
+  50%{opacity:1}
+}
+@media (prefers-reduced-motion: reduce){
+  .move-target{animation:none;opacity:.85}
+}

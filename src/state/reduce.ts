@@ -74,13 +74,22 @@ export function applyEvent(st: DerivedState, ev: GameEvent): DerivedState {
       break;
     }
     case "tile/place": {
-      s.tiles[p["slot"] as string] = {
-        cardId: p["cardId"] as string,
-        placedByTeamId: p["teamId"] as string | undefined,
+      const slot = p["slot"] as string;
+      const cardId = p["cardId"] as string;
+      const owner = p["teamId"] as string | undefined;
+      s.tiles[slot] = {
+        cardId,
+        placedByTeamId: owner,
         disabled: null,
         faceDown: Boolean(p["faceDown"]),
-        activatedBy: [],
+        activatedBy: owner ? [owner] : [],
       };
+      // A team's piece starts on its Base. Without this characterAt is
+      // undefined, the adjacency check in canMoveTo has nothing to measure
+      // from, and the first move could legally land anywhere on the map.
+      if (cardId.startsWith("BASE") && owner && s.teams[owner] && !s.teams[owner].characterAt) {
+        s.teams[owner].characterAt = slot;
+      }
       break;
     }
     case "tile/reveal": {
