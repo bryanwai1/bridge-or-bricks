@@ -41,10 +41,17 @@ const MODEL_URL: Record<PropKind, string> = {
 };
 
 /** Fraction of a hex width each model should span once scaled. */
+/**
+ * How long each prop is, as a fraction of a hex's flat-to-flat height.
+ *
+ * A wall sits on the edge between two hexes, and a flat-top hex's side is
+ * HEX_W / 2 — about 0.58 of HEX_H, not a whole hex. Sizing it at ~1.0 made it
+ * straddle two tiles. Bridges do cross a whole tile, so they stay near 1.
+ */
 const SPAN: Record<PropKind, number> = {
-  wall: 0.98,
-  wood: 1.02,
-  metal: 1.06,
+  wall: 0.62,
+  wood: 0.92,
+  metal: 0.96,
 };
 
 const cache = new Map<PropKind, Promise<THREE.Object3D>>();
@@ -64,12 +71,19 @@ function loadProp(kind: PropKind): Promise<THREE.Object3D> {
           box.getSize(size);
           box.getCenter(centre);
           const longest = Math.max(size.x, size.y, size.z) || 1;
+
+          /* Normalise the INNER node, not the wrapper.
+             The wrapper's scale is what layout() sets every frame, so putting
+             the 1/longest factor there meant it was overwritten the moment the
+             camera moved — models came out at their raw glTF size, which is
+             why the wall arrived about twice as wide as a hex. */
           root.position.sub(centre);
-          // sit the model ON the plane rather than through it
-          root.position.y += size.y / 2;
+          root.scale.setScalar(1 / longest);
+          // lift it so the base rests on the mat instead of halfway through
+          root.position.set(0, size.y / longest / 2, 0);
+
           const wrap = new THREE.Group();
           wrap.add(root);
-          wrap.scale.setScalar(1 / longest);
           resolve(wrap);
         },
         undefined,
@@ -161,15 +175,17 @@ export default function Props3D({
     const renderer = new THREE.WebGLRenderer({ canvas, alpha: true, antialias: true });
     renderer.setPixelRatio(Math.min(devicePixelRatio, 2));
     renderer.outputColorSpace = THREE.SRGBColorSpace;
+    renderer.toneMapping = THREE.ACESFilmicToneMapping;
+    renderer.toneMappingExposure = 1.05;
 
     const scene = new THREE.Scene();
     const camera = new THREE.PerspectiveCamera(45, 1, 10, 20000);
 
-    scene.add(new THREE.AmbientLight(0xffffff, 1.5));
-    const key = new THREE.DirectionalLight(0xffe9c4, 2.1);
+    scene.add(new THREE.AmbientLight(0xffffff, 0.85));
+    const key = new THREE.DirectionalLight(0xffe9c4, 1.35);
     key.position.set(-260, 420, 520);
     scene.add(key);
-    const rim = new THREE.DirectionalLight(0x9fd98a, 0.7);
+    const rim = new THREE.DirectionalLight(0x9fd98a, 0.45);
     rim.position.set(400, -200, 260);
     scene.add(rim);
 
@@ -238,8 +254,11 @@ export default function Props3D({
         const node = src.clone(true);
         node.userData.place = p;
         // battered props sit lower and go grey as durability drains
-        const sink = (1 - p.health) * 0.18;
-        node.position.y = -sink;
+        // a battered prop settles into the mat; local units, so it survives
+        // the per-frame rescale
+        const settle = (1 - p.health) * 0.14;
+        const inner = node.children[0];
+        if (inner) inner.position.y = Math.max(0, inner.position.y - settle);
         node.traverse((o) => {
           const mesh = o as THREE.Mesh;
           if (!mesh.isMesh) return;
