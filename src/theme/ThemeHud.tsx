@@ -1,5 +1,5 @@
 import { useEffect, useState } from "react";
-import { ambience, setAct, currentAct } from "./ambience";
+import { ambience, currentAct } from "./ambience";
 import { isMuted, toggleMute, unlockAudio } from "../audio/sfx";
 
 /**
@@ -14,14 +14,16 @@ export default function ThemeHud() {
   const [mute, setMute] = useState(() => isMuted());
   const [open, setOpen] = useState(false);
 
-  // restore the saved act on first paint
-  useEffect(() => { setAct(act); }, []); // eslint-disable-line react-hooks/exhaustive-deps
-
-  const cycleAct = () => {
-    const next = ((act % 3) + 1) as 1 | 2 | 3;
-    setAct(next);
-    setActState(next);
-  };
+  /* App drives the Act from the game state now, so this only mirrors it.
+     Watching the attribute keeps the readout honest without prop drilling. */
+  useEffect(() => {
+    const el = document.documentElement;
+    const read = () => setActState(currentAct());
+    read();
+    const mo = new MutationObserver(read);
+    mo.observe(el, { attributes: true, attributeFilter: ["data-act"] });
+    return () => mo.disconnect();
+  }, []);
 
   const toggleAmbience = () => {
     unlockAudio();
@@ -42,10 +44,10 @@ export default function ThemeHud() {
       </button>
 
       <div className="hud-panel">
-        <button className="hud-btn hud-act" onClick={cycleAct} title="Change the Act">
+        <div className="hud-btn hud-act" title="The Act follows the cards the table has opened">
           <b>Act {act}</b>
           <i>{ACT_LABEL[act]}</i>
-        </button>
+        </div>
 
         <button
           className={amb ? "hud-btn on" : "hud-btn"}

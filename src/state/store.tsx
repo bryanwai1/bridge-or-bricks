@@ -35,6 +35,7 @@ const GAMEPLAY_TYPES = new Set<EventType>([
   "token/use",
   "action/log",
   "endgame/draw",
+  "endgame/enter",
 ]);
 
 export function roleCanCommit(role: RoleType): boolean {

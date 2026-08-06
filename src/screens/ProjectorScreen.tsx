@@ -9,6 +9,7 @@ import {
 } from "../data/rules";
 import { ENDGAME_UNLOCK_AFTER, revealedCount } from "../data/gates";
 import { povRotation } from "../data/seats";
+import { enteredGate, gateStatus } from "../data/progress";
 import { ENVIRONMENTS, envForAct, type EnvKey } from "../world/environments";
 
 const ACT = [
@@ -119,6 +120,10 @@ export default function ProjectorScreen() {
           </div>
         ) : null}
 
+        {gateFound && (
+          <div className="proj-gate-call">🌟 {gateStatus(state)}</div>
+        )}
+
         <div className="proj-ctl">
           <button className="bctl" onClick={() => { setIdle(false); boardRef.current?.zoomBy(1 / 1.2); }}>＋</button>
           <button className="bctl" onClick={() => { setIdle(false); boardRef.current?.zoomBy(1.2); }}>－</button>
@@ -221,7 +226,11 @@ export default function ProjectorScreen() {
           </div>
           <div className={gateFound ? "pgate gold" : "pgate"}>
             <span>Golden Gate</span>
-            <b>{gateFound ? "FOUND" : odds.chance}</b>
+            <b>
+              {gateFound
+                ? `${enteredGate(state).length}/${state.teamOrder.length}`
+                : odds.chance}
+            </b>
           </div>
         </div>
 

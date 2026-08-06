@@ -29,6 +29,7 @@ export function emptyState(): DerivedState {
     bridges: {},
     negotiations: {},
     endgameDrawn: [],
+    gateEntered: [],
     recentNotes: [],
   };
 }
@@ -224,6 +225,12 @@ export function applyEvent(st: DerivedState, ev: GameEvent): DerivedState {
     }
     case "endgame/draw": {
       s.endgameDrawn.push(p["cardId"] as string);
+      break;
+    }
+    case "endgame/enter": {
+      const tid = p["teamId"] as string;
+      s.gateEntered = s.gateEntered ?? [];
+      if (!s.gateEntered.includes(tid)) s.gateEntered.push(tid);
       break;
     }
     case "proposal/submit": {

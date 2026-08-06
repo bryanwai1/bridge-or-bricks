@@ -87,6 +87,7 @@ export type EventType =
   | "negotiation/close"
   | "phase/advance"
   | "endgame/draw"
+  | "endgame/enter"
   | "note/add"
   | "proposal/submit"
   | "proposal/approve"
@@ -155,6 +156,8 @@ export interface DerivedState {
   bridges: Record<string, BridgeInstance[]>;
   negotiations: Record<string, NegotiationRecord>;
   endgameDrawn: string[];
+  /** Teams that have entered the Golden Gate, in the order they did. */
+  gateEntered: string[];
   /** Last few public notes, for the projector ticker. */
   recentNotes: string[];
 }

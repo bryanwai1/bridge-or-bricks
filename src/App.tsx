@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { StoreProvider, useStore } from "./state/store";
 import Setup from "./screens/Setup";
 import JoinScreen from "./screens/JoinScreen";
@@ -13,6 +13,9 @@ import GuideScreen from "./screens/GuideScreen";
 import type { RoleType } from "./types";
 import Backdrop from "./theme/Backdrop";
 import ThemeHud from "./theme/ThemeHud";
+import Outcome from "./components/Outcome";
+import { currentActFrom } from "./data/progress";
+import { setAct } from "./theme/ambience";
 
 type Tab = "board" | "team" | "actions" | "log" | "cards" | "share" | "projector";
 
@@ -29,6 +32,15 @@ const JOIN_TEAM = new URLSearchParams(location.search).get("team");
 
 function Shell() {
   const { state, identity, setIdentity, undo, canUndo, sync } = useStore();
+
+  /* The Act is a fact about the table, not a setting. Opening the first
+     Orange card moves the whole app to Act II; the first Red to Act III.
+     theme.css and the canvas Backdrop both read <html data-act>, so the
+     palette, the world and the ambience bed turn together. */
+  const act = currentActFrom(state);
+  useEffect(() => {
+    setAct(act);
+  }, [act]);
   const [tab, setTab] = useState<Tab>(() =>
     JOIN_TEAM ? "board" : "board",
   );
@@ -98,6 +110,7 @@ function Shell() {
   if (tab === "projector") {
     return (
       <div className="app projector-mode">
+        <Outcome state={state} />
         <ProjectorScreen />
         <button className="chip float-exit" onClick={() => setTab(ROLE_TAB[identity.role])}>
           ← back
@@ -108,6 +121,7 @@ function Shell() {
 
   return (
     <div className="app">
+      <Outcome state={state} />
       <header className="topbar">
         <select
           className="identity"

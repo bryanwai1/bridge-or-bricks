@@ -16,6 +16,14 @@ import {
 import { isMuted, sfx, toggleMute, unlockAudio } from "../audio/sfx";
 import CardReveal from "../components/CardReveal";
 import { activeTeamId, canAct, roundComplete } from "../data/turn";
+import {
+  actInfo,
+  collapsedTeams,
+  gateFound as isGateOut,
+  gateStatus,
+  hasEntered,
+  strugglingTeams,
+} from "../data/progress";
 
 /**
  * needsBoard: the move has to name a hex, so the cost and the placement rules
@@ -72,7 +80,7 @@ export default function ActionsScreen() {
   const redOpened = revealedCount(state, "red");
   const endgameLocked = redOpened < ENDGAME_UNLOCK_AFTER;
   const odds = goldenGateOdds(state);
-  const gateFound = state.endgameDrawn.includes("EG01");
+  const gateFound = isGateOut(state);
 
   if (!team) return null;
 
@@ -128,6 +136,21 @@ export default function ActionsScreen() {
     setShowReport(false);
   };
 
+  /** Reaching the Gate. Collaborative needs everyone through; competitive
+      ends on the first team. Costs an action so it sits inside the turn. */
+  const enterGate = () => {
+    unlockAudio();
+    sfx.approve();
+    appendGroup([
+      { type: "token/use", payload: { teamId } },
+      {
+        type: "endgame/enter",
+        payload: { teamId },
+        note: `🌟 ${team.config.name} entered the Golden Gate`,
+      },
+    ]);
+  };
+
   const drawEndgame = () => {
     unlockAudio();
     const card = drawEndgameCard(state);
@@ -152,6 +175,48 @@ export default function ActionsScreen() {
           onClose={() => setDrawn(null)}
         />
       )}
+
+      {!planning && (() => {
+        const info = actInfo(state);
+        return (
+          <div className={`act-bar act-${info.act}`}>
+            <div className="act-head">
+              <b>{info.label}</b>
+              <span className="act-round">Round {state.round}</span>
+            </div>
+            <div className="act-track">
+              {[1, 2, 3].map((n) => (
+                <span key={n} className={n <= info.act ? "act-step on" : "act-step"} />
+              ))}
+            </div>
+            {info.next && <span className="act-next">{info.next}</span>}
+            <div className="act-fill-track">
+              <div className="act-fill" style={{ width: `${Math.round(info.progress * 100)}%` }} />
+            </div>
+          </div>
+        );
+      })()}
+
+      {(() => {
+        const dead = collapsedTeams(state);
+        const shaky = strugglingTeams(state);
+        if (dead.length === 0 && shaky.length === 0) return null;
+        const nm = (t: string) => state.teams[t]?.config.name ?? t;
+        return (
+          <div className={dead.length ? "risk-bar dead" : "risk-bar"}>
+            {dead.length > 0 && (
+              <span>
+                💀 Collapsed: {dead.map(nm).join(", ")} — no moves left and nothing in the pool.
+              </span>
+            )}
+            {shaky.length > 0 && (
+              <span>
+                ⚠️ Running dry: {shaky.map(nm).join(", ")} — no income and almost nothing held.
+              </span>
+            )}
+          </div>
+        );
+      })()}
 
       {!planning && state.turnOrder.length > 0 && !isFacilitator && (
         <div className={turn.ok ? "turn-banner live" : "turn-banner waiting"}>
@@ -395,7 +460,31 @@ export default function ActionsScreen() {
         <p className="muted small">
           {ENDGAME_ACCESS_RULE} {odds.left} cards left · Golden Gate odds {odds.chance}.
         </p>
-        {gateFound && <p className="rv-tag">🌟 The Golden Gate is out. Teams must now enter it.</p>}
+        {gateFound && (
+          <div className="gate-open">
+            <p className="rv-tag">🌟 The Golden Gate is out. {gateStatus(state)}</p>
+            {hasEntered(state, teamId) ? (
+              <p className="gate-through">✅ {team.config.name} is through the Gate.</p>
+            ) : (
+              <button className="primary gate-enter" disabled={!turn.ok} title={turn.reason} onClick={enterGate}>
+                🌟 Enter the Golden Gate · 1 action
+              </button>
+            )}
+            {state.mode === "collaborative" && (
+              <div className="gate-roster">
+                {state.teamOrder.map((tid) => (
+                  <span
+                    key={tid}
+                    className={hasEntered(state, tid) ? "gate-pip in" : "gate-pip"}
+                    style={{ "--team": state.teams[tid]?.config.color } as React.CSSProperties}
+                  >
+                    {hasEntered(state, tid) ? "✓" : "○"} {state.teams[tid]?.config.name}
+                  </span>
+                ))}
+              </div>
+            )}
+          </div>
+        )}
         {endgameLocked && (
           <p className="gate-msg">
             🔒 Unlocks after {ENDGAME_UNLOCK_AFTER} Red cards are opened ({redOpened}/{ENDGAME_UNLOCK_AFTER})
