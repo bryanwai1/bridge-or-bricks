@@ -8,6 +8,8 @@ import {
   teamProduction,
 } from "../data/rules";
 import { ENDGAME_UNLOCK_AFTER, revealedCount } from "../data/gates";
+import { povRotation } from "../data/seats";
+import { ENVIRONMENTS, envForAct, type EnvKey } from "../world/environments";
 
 const ACT = [
   { key: "green", label: "Act I · Growth", color: "#4e7d3a" },
@@ -26,6 +28,15 @@ export default function ProjectorScreen() {
   const [tilt, setTilt] = useState(() => Number(localStorage.getItem("bob-proj-tilt") ?? 42));
   const [spin, setSpin] = useState(0);
   const [idle, setIdle] = useState(true);
+  const [env, setEnv] = useState<EnvKey | "auto">(
+    () => (localStorage.getItem("bob-proj-env") as EnvKey | null) ?? "auto",
+  );
+  /* Roll the mat round to whichever team is playing, so the room is always
+     looking at the board the way that team sees it. */
+  const [seatView, setSeatView] = useState(
+    () => localStorage.getItem("bob-proj-seat") !== "0",
+  );
+  const [seatSpin, setSeatSpin] = useState(0);
 
   /* a slow drift, so a static board on a TV still feels alive */
   useEffect(() => {
@@ -48,7 +59,30 @@ export default function ProjectorScreen() {
   const gateFound = state.endgameDrawn.includes("EG01");
 
   const active = state.turnOrder[state.activeTurnIndex];
+  const actNo = (redOpen > 0 ? 3 : orangeOpen > 0 ? 2 : 1) as 1 | 2 | 3;
+  const world: EnvKey = env === "auto" ? envForAct(actNo) : env;
   const upNext = state.turnOrder[(state.activeTurnIndex + 1) % Math.max(1, state.turnOrder.length)];
+
+  useEffect(() => {
+    if (!seatView || !active) {
+      setSeatSpin(0);
+      return;
+    }
+    const target = povRotation(state, active);
+    let raf = 0;
+    const step = () => {
+      setSeatSpin((cur) => {
+        const d = ((target - cur + 540) % 360) - 180;
+        if (Math.abs(d) < 0.2) return target;
+        raf = requestAnimationFrame(step);
+        return (cur + d * 0.06 + 360) % 360;
+      });
+    };
+    raf = requestAnimationFrame(step);
+    return () => cancelAnimationFrame(raf);
+    // the seat ring only moves when the playing team does
+     
+  }, [seatView, active, state.turnOrder.length]);
 
   const feed = [...(state.recentNotes ?? [])].slice(-7).reverse();
 
@@ -59,9 +93,9 @@ export default function ProjectorScreen() {
           ref={boardRef}
           state={state}
           mode="view"
-          rotation={spin}
+          rotation={(seatSpin + spin + 360) % 360}
           tilt={tilt}
-          sky="assets/sky.webp"
+          sky={world}
         />
         <div className="proj-vignette" aria-hidden />
 
@@ -96,6 +130,35 @@ export default function ProjectorScreen() {
           >
             ↻
           </button>
+          <button
+            className={seatView ? "bctl on" : "bctl"}
+            title="Turn the map to the playing team's point of view"
+            onClick={() =>
+              setSeatView((v) => {
+                localStorage.setItem("bob-proj-seat", v ? "0" : "1");
+                return !v;
+              })
+            }
+          >
+            🎯
+          </button>
+          <select
+            className="proj-env"
+            value={env}
+            title="World"
+            onChange={(e) => {
+              const v = e.target.value as EnvKey | "auto";
+              setEnv(v);
+              localStorage.setItem("bob-proj-env", v);
+            }}
+          >
+            <option value="auto">World · follows the Act</option>
+            {ENVIRONMENTS.map((o) => (
+              <option key={o.key} value={o.key}>
+                World · {o.label}
+              </option>
+            ))}
+          </select>
           <input
             className="proj-tilt"
             type="range" min={0} max={66} value={tilt}

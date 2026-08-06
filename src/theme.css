@@ -1002,3 +1002,252 @@ html{background:var(--bg)}
 .board-3d[data-drag="1"]{cursor:grabbing}
 .board-3d[data-orbit="1"]{cursor:move}
 .board-toolbar .chip.active{box-shadow:0 0 0 1px var(--accent)}
+
+/* ============================================================
+   ROUND 14 — TURN LOOP
+   Hard lock: out of turn the controls are disabled, not warned.
+   The player needs to know why, so the state is always on screen.
+   ============================================================ */
+
+.turn-banner{
+  display:flex;
+  flex-direction:column;
+  gap:2px;
+  padding:12px 16px;
+  border-left:6px solid var(--muted);
+  border-radius:4px 14px 14px 4px;
+  background:var(--plaque);
+  backdrop-filter:blur(10px);
+  -webkit-backdrop-filter:blur(10px);
+}
+.turn-banner b{
+  font-family:var(--display);
+  font-size:1.25rem;
+  line-height:1.15;
+}
+.turn-banner-label{
+  font-size:.66rem;
+  letter-spacing:.2em;
+  text-transform:uppercase;
+  color:var(--muted);
+}
+.turn-banner-why{font-size:.82rem;color:var(--muted)}
+
+.turn-banner.live{
+  border-left-color:var(--good);
+  background:linear-gradient(90deg,rgba(127,201,138,.16),var(--plaque) 62%);
+}
+.turn-banner.live b{color:var(--good)}
+.turn-banner.waiting{opacity:.72}
+.turn-banner.ready{
+  border-left-color:var(--accent);
+  background:linear-gradient(90deg,rgba(227,178,74,.18),var(--plaque) 62%);
+}
+.turn-banner.ready b{color:var(--accent-2)}
+
+/* compact version for the board toolbar */
+.turn-pill{
+  display:inline-flex;
+  align-items:center;
+  gap:6px;
+  padding:5px 11px;
+  border:1px solid var(--line);
+  border-radius:999px;
+  background:var(--plaque-2);
+  font-size:.76rem;
+  line-height:1.2;
+  color:var(--muted);
+  white-space:nowrap;
+  overflow:hidden;
+  text-overflow:ellipsis;
+  max-width:min(60vw,420px);
+}
+.turn-pill.live{
+  border-color:var(--good);
+  color:var(--good);
+  box-shadow:0 0 14px rgba(127,201,138,.18) inset;
+}
+
+/* moves that need a hex: present, explained, not silently wasting an action */
+.action-btn.on-board{
+  opacity:.55;
+  border-style:dashed;
+}
+.action-btn.on-board .on-board-tag{
+  display:block;
+  margin-top:3px;
+  font-size:.64rem;
+  font-style:normal;
+  letter-spacing:.14em;
+  text-transform:uppercase;
+  color:var(--accent-dim);
+}
+
+/* a non-Leader submitted something — tell them where it went */
+.sent-flash{
+  padding:9px 14px;
+  margin-bottom:8px;
+  border:1px solid var(--accent-dim);
+  border-radius:12px;
+  background:var(--plaque);
+  font-size:.84rem;
+  color:var(--accent-2);
+  animation:sentIn .28s var(--ease);
+}
+@keyframes sentIn{
+  from{opacity:0;transform:translateY(-6px)}
+  to{opacity:1;transform:none}
+}
+
+/* ============================================================
+   ROUND 15 — SEATS & WORLDS
+   Teams stand around a physical mat, so somebody always reads
+   the board upside down. The seat strip rolls it round to a
+   team's chair; the projector does it automatically on their
+   turn, which tells the room whose go it is without words.
+   ============================================================ */
+
+.seat-strip{
+  display:flex;
+  align-items:center;
+  gap:7px;
+  padding:4px 0 8px;
+  overflow-x:auto;
+  scrollbar-width:none;
+}
+.seat-strip::-webkit-scrollbar{display:none}
+.seat-label{
+  font-size:.64rem;
+  letter-spacing:.18em;
+  text-transform:uppercase;
+  color:var(--muted);
+  white-space:nowrap;
+}
+.seat-chip{
+  flex:0 0 auto;
+  padding:6px 12px;
+  border:1px solid var(--line);
+  border-left:4px solid var(--team,var(--accent));
+  border-radius:4px 999px 999px 4px;
+  background:var(--plaque-2);
+  color:var(--text);
+  font-size:.8rem;
+  white-space:nowrap;
+  cursor:pointer;
+  transition:transform .2s var(--ease),box-shadow .2s var(--ease);
+}
+.seat-chip:hover{transform:translateY(-1px)}
+.seat-chip.active{
+  background:linear-gradient(90deg,color-mix(in srgb,var(--team,#888) 30%,transparent),var(--plaque-2) 78%);
+  box-shadow:0 0 0 1px var(--team,var(--accent));
+}
+
+/* world picker inside the camera panel */
+.env-picker{
+  display:grid;
+  grid-template-columns:repeat(2,minmax(0,1fr));
+  gap:5px;
+  width:100%;
+}
+.env-chip{
+  display:flex;
+  align-items:center;
+  gap:6px;
+  padding:6px 9px;
+  border:1px solid var(--line);
+  border-radius:10px;
+  background:var(--plaque-2);
+  color:var(--text);
+  font-size:.74rem;
+  cursor:pointer;
+}
+.env-dot{
+  width:11px;
+  height:11px;
+  border-radius:50%;
+  background:var(--env,#888);
+  box-shadow:0 0 8px var(--env,#888);
+  flex:0 0 auto;
+}
+.env-chip.active{
+  border-color:var(--env,var(--accent));
+  box-shadow:0 0 0 1px var(--env,var(--accent));
+}
+.cam-row{
+  display:flex;
+  flex-direction:column;
+  gap:3px;
+  width:100%;
+}
+.cam-row input[type="range"]{width:100%;accent-color:var(--accent)}
+
+.proj-env{
+  max-width:190px;
+  padding:7px 10px;
+  border:1px solid var(--line);
+  border-radius:999px;
+  background:rgba(0,0,0,.55);
+  color:var(--text);
+  font-family:var(--body);
+  font-size:.76rem;
+}
+
+/* ============================================================
+   CAMERA PANEL — rebuilt
+   It was a 232px column of full-size chips that wrapped onto
+   extra rows, ate a third of the board and grew worse with
+   every control added. Fixed width, real grid, own scroll.
+   ============================================================ */
+
+.cam-panel{left:10px;bottom:14px;max-width:calc(100vw - 20px)}
+.cam-body{
+  width:min(262px,calc(100vw - 24px));
+  max-height:min(62vh,430px);
+  gap:9px;
+  padding:13px;
+  overflow-y:auto;
+  overscroll-behavior:contain;
+  background:rgba(14,22,17,.95);
+  border-color:var(--line);
+  backdrop-filter:blur(14px);
+  -webkit-backdrop-filter:blur(14px);
+}
+.cam-body::-webkit-scrollbar{width:5px}
+.cam-body::-webkit-scrollbar-thumb{background:var(--accent-dim);border-radius:3px}
+
+/* four pitch presets, one tidy row, never wrapping */
+.cam-presets{
+  display:grid;
+  grid-template-columns:repeat(4,minmax(0,1fr));
+  gap:5px;
+}
+.cam-presets .chip{
+  padding:7px 2px;
+  font-size:.72rem;
+  letter-spacing:.02em;
+  text-align:center;
+  justify-content:center;
+  border-radius:9px;
+}
+
+/* section headings inside the panel */
+.cam-body > b.small{
+  margin-top:2px;
+  font-size:.62rem;
+  letter-spacing:.18em;
+  text-transform:uppercase;
+  color:var(--muted);
+  font-family:var(--body);
+}
+.cam-body > .muted.small{font-size:.72rem;line-height:1.3}
+
+/* the world chips must stay small — six of them live here now */
+.env-chip{padding:5px 7px;font-size:.7rem}
+.env-dot{width:9px;height:9px}
+
+/* Reset view is a footer action, not a hero button */
+.cam-body > .chip:last-child{
+  justify-content:center;
+  padding:8px;
+  font-size:.76rem;
+}

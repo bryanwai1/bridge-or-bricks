@@ -21,6 +21,7 @@ import { CARD_BY_ID } from "../data/catalog";
 import { DECK_BACK, deckOf } from "../data/gates";
 import Board3D from "./Board3D";
 import Sky360 from "./Sky360";
+import type { EnvKey } from "../world/environments";
 
 export interface BoardSelection {
   kind: "slot" | "edge";
@@ -42,8 +43,8 @@ interface Props {
   orbitMode?: boolean;
   /** Drag deltas in px: (+dx = spin right, +dy = drop the camera lower). */
   onOrbit?: (dx: number, dy: number) => void;
-  /** Equirectangular panorama for the surrounding world. Empty string = off. */
-  sky?: string;
+  /** Which world surrounds the table. "none" renders the bare table instead. */
+  sky?: EnvKey;
 }
 
 export interface BoardHandle {
@@ -292,10 +293,10 @@ const HexBoard = forwardRef<BoardHandle, Props>(function HexBoard(
   const dragging = pointers.current.size > 0;
 
   return (
-    <div className="board-3d" ref={wrapRef} data-tilted={tilted ? "1" : undefined} data-sky={sky ? "1" : undefined} data-drag={dragging ? "1" : undefined} data-orbit={orbitMode ? "1" : undefined}>
-      {sky && (
+    <div className="board-3d" ref={wrapRef} data-tilted={tilted ? "1" : undefined} data-sky={sky && sky !== "none" ? "1" : undefined} data-drag={dragging ? "1" : undefined} data-orbit={orbitMode ? "1" : undefined}>
+      {sky && sky !== "none" && (
         <Sky360
-          src={sky}
+          env={sky}
           rotation={rotation}
           tilt={tilt}
           width={box.w}

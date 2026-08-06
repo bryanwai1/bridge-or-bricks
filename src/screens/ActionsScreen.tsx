@@ -15,17 +15,23 @@ import {
 } from "../data/rules";
 import { isMuted, sfx, toggleMute, unlockAudio } from "../audio/sfx";
 import CardReveal from "../components/CardReveal";
+import { activeTeamId, canAct, roundComplete } from "../data/turn";
 
-const ACTIONS = [
-  { key: "explore", label: "🔭 Explore — reveal a card at range" },
-  { key: "move", label: "🚶 Move" },
-  { key: "build-wood-bridge", label: `🪵 Wood bridge · ${costLabel(RULES.woodBridge.cost)}` },
-  { key: "build-metal-bridge", label: `🌉 Metal bridge · ${costLabel(RULES.metalBridge.cost)}` },
-  { key: "build-wall", label: `🧱 Wall · ${costLabel(RULES.wall.cost)}` },
+/**
+ * needsBoard: the move has to name a hex, so the cost and the placement rules
+ * can only be checked on the Board tab. These used to sit here as plain
+ * buttons that spent an action and changed nothing — an action quietly thrown
+ * away. They now say where to go instead.
+ */
+const ACTIONS: { key: string; label: string; needsBoard?: boolean }[] = [
+  { key: "explore", label: "🔭 Explore — reveal a card at range", needsBoard: true },
+  { key: "move", label: "🚶 Move", needsBoard: true },
+  { key: "build-wood-bridge", label: `🪵 Wood bridge · ${costLabel(RULES.woodBridge.cost)}`, needsBoard: true },
+  { key: "build-metal-bridge", label: `🌉 Metal bridge · ${costLabel(RULES.metalBridge.cost)}`, needsBoard: true },
+  { key: "build-wall", label: `🧱 Wall · ${costLabel(RULES.wall.cost)}`, needsBoard: true },
   { key: "trade", label: `⚖️ Trade · ${costLabel(RULES.tradeGive)} → ${costLabel(RULES.tradeGet)}` },
   { key: "trade-metal", label: `⚙️ Buy Metal · ${costLabel(RULES.metalGive)} → ${costLabel(RULES.metalGet)}` },
-  { key: "maintenance", label: "🔧 Maintenance — pay bridge upkeep" },
-  { key: "demolish-wall", label: "💥 Demolish wall · 1📦" },
+  { key: "demolish-wall", label: "💥 Demolish wall · 1📦", needsBoard: true },
   { key: "other", label: "✏️ Other / custom" },
 ];
 
@@ -52,6 +58,9 @@ export default function ActionsScreen() {
   const isFacilitator = identity.role === "facilitator";
   const canApprove = roleCanCommit(identity.role);
   const planning = state.phase === "planning";
+  const turn = canAct(state, teamId, identity.role);
+  const active = activeTeamId(state);
+  const allPlayed = roundComplete(state);
 
   const pending = Object.values(state.proposals).filter(
     (pr) => pr.state === "pending" && (isFacilitator || (pr.teamId && pr.teamId === teamId)),
@@ -142,6 +151,30 @@ export default function ActionsScreen() {
           subtitle={`${team.config.name} · ${endgameRemaining(state).length - 1} cards left after this`}
           onClose={() => setDrawn(null)}
         />
+      )}
+
+      {!planning && state.turnOrder.length > 0 && !isFacilitator && (
+        <div className={turn.ok ? "turn-banner live" : "turn-banner waiting"}>
+          <span className="turn-banner-label">
+            {turn.ok ? "Your turn" : "Standing by"}
+          </span>
+          <b>
+            {turn.ok
+              ? `${team.config.name} — ${team.actionTokens.available} action${
+                  team.actionTokens.available === 1 ? "" : "s"
+                } left`
+              : (state.teams[active ?? ""]?.config.name ?? "—")}
+          </b>
+          {!turn.ok && <span className="turn-banner-why">{turn.reason}</span>}
+        </div>
+      )}
+
+      {allPlayed && canApprove && (
+        <div className="turn-banner ready">
+          <span className="turn-banner-label">Round {state.round} complete</span>
+          <b>Every team has spent their actions</b>
+          <span className="turn-banner-why">Resolve the round at the bottom of this screen.</span>
+        </div>
       )}
 
       {planning && (
@@ -335,18 +368,25 @@ export default function ActionsScreen() {
           {ACTIONS.map((a) => (
             <button
               key={a.key}
-              className="action-btn"
-              disabled={planning || team.actionTokens.available === 0}
+              className={a.needsBoard ? "action-btn on-board" : "action-btn"}
+              disabled={planning || !turn.ok || a.needsBoard}
+              title={
+                a.needsBoard
+                  ? "Pick the hex on the Board tab — the cost and placement rules are checked there"
+                  : turn.reason
+              }
               onClick={() => logAction(a.key, a.label)}
             >
               {a.label}
+              {a.needsBoard && <i className="on-board-tag">on the Board tab</i>}
             </button>
           ))}
         </div>
         <p className="muted small">
-          Builds and explores are best done from the Board tab — the app deducts the cost and
-          checks the placement rules there. Costs marked playtest live in one editable block in
-          <code> src/data/rules.ts</code>.
+          Anything that needs a hex is done on the Board tab, where the app deducts the cost
+          and checks the placement rules. Bridge upkeep is paid automatically in the
+          Maintenance Phase — it is not a move you spend an action on. Costs marked playtest
+          live in one editable block in <code>src/data/rules.ts</code>.
         </p>
       </div>
 
@@ -364,7 +404,13 @@ export default function ActionsScreen() {
         )}
         <button
           className="primary"
-          disabled={(endgameLocked && !isFacilitator) || odds.left === 0 || team.resources.supply < 1}
+          disabled={
+            !turn.ok ||
+            (endgameLocked && !isFacilitator) ||
+            odds.left === 0 ||
+            team.resources.supply < 1
+          }
+          title={turn.reason}
           onClick={drawEndgame}
         >
           Draw a card · 1📦

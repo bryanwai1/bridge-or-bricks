@@ -6,7 +6,10 @@ import { CARDS, CARD_BY_ID, DECKS, type CardDef } from "../data/catalog";
 import { deckGate, deckOf, type DeckGate } from "../data/gates";
 import { RULES, canAfford, canMoveTo, costLabel, isActivated, type CostBag } from "../data/rules";
 import { sfx, unlockAudio } from "../audio/sfx";
-import { useStore } from "../state/store";
+import { roleCanCommit, useStore } from "../state/store";
+import { activeTeamId, canAct } from "../data/turn";
+import { nearestSeat, povRotation, seatOffset, seatOrder, setSeatOffset } from "../data/seats";
+import { ENVIRONMENTS, type EnvKey } from "../world/environments";
 import type { ResourceKind } from "../types";
 
 /** Camera presets. 0 is the printed mat seen from directly above. */
@@ -36,7 +39,13 @@ export default function BoardScreen() {
   const [tilt, setTilt] = useState(() => Number(localStorage.getItem("bob-tilt") ?? 0));
   const [showCam, setShowCam] = useState(false);
   const [orbit, setOrbit] = useState(false);
-  const [sky, setSky] = useState(() => localStorage.getItem("bob-sky") ?? "assets/sky.webp");
+  const [sky, setSky] = useState<EnvKey>(
+    () => (localStorage.getItem("bob-env") as EnvKey) ?? "grove",
+  );
+  /* When on, the board rolls round to face whichever team is playing. */
+  const [followTurn, setFollowTurn] = useState(
+    () => localStorage.getItem("bob-follow-seat") === "1",
+  );
 
   /* Camera feel. The old gains spun the board out from under the pointer,
      and every single pointermove wrote the pitch to localStorage — a
@@ -131,6 +140,14 @@ export default function BoardScreen() {
     anim.current = requestAnimationFrame(step);
   };
 
+  /** Roll the mat round so this team's edge is nearest the viewer. */
+  const lookFromSeat = (tid: string) => {
+    sfx.tap();
+    glide(tilt < 12 ? 34 : tilt, povRotation(state, tid));
+  };
+
+  const facing = nearestSeat(state, rotation);
+
   const setCamera = (deg: number) => {
     localStorage.setItem("bob-tilt", String(deg));
     sfx.tap();
@@ -146,6 +163,28 @@ export default function BoardScreen() {
 
   const teamId = identity.teamId ?? state.teamOrder[0];
   const team = state.teams[teamId];
+  const turn = canAct(state, teamId, identity.role);
+  const active = activeTeamId(state);
+  /* Non-Leader roles never commit directly — the store turns their submission
+     into a proposal. Without a message they just see nothing happen. */
+  const viaLeader = !roleCanCommit(identity.role);
+  const [sent, setSent] = useState<string | null>(null);
+  const flash = (what: string) => {
+    if (!viaLeader) return;
+    setSent(what);
+    window.setTimeout(() => setSent(null), 3200);
+  };
+
+  /* Follow the turn: when the active team changes, swing round to their chair.
+     Deliberately keyed on the team only — adding tilt would yank the camera
+     back mid-drag every time the pitch changed. */
+  const lastFollowed = useRef<string | null>(null);
+  useEffect(() => {
+    if (!followTurn || !active) return;
+    if (lastFollowed.current === active) return;
+    lastFollowed.current = active;
+    lookFromSeat(active);
+  }, [followTurn, active]);
   const tile = sel?.kind === "slot" ? state.tiles[sel.key] : undefined;
   const wall = sel?.kind === "edge" ? state.walls[sel.key] : undefined;
   const bridges = sel?.kind === "slot" ? state.bridges[sel.key] ?? [] : [];
@@ -159,8 +198,10 @@ export default function BoardScreen() {
   }
 
   const placeCard = (c: CardDef, slot: string) => {
+    if (!turn.ok) return sfx.denied();
     unlockAudio();
     sfx.place();
+    flash(`Placing a card at ${slot}`);
     const faceDown = c.deck !== "base";
     append(
       "tile/place",
@@ -176,7 +217,9 @@ export default function BoardScreen() {
   };
 
   const explore = (slot: string) => {
+    if (!turn.ok) return sfx.denied();
     unlockAudio();
+    flash(`Explore at ${slot}`);
     const cardId = state.tiles[slot]?.cardId;
     appendGroup([
       {
@@ -193,9 +236,10 @@ export default function BoardScreen() {
 
   const buildBridge = (kind: "wood" | "metal", slot: string) => {
     const spec = kind === "wood" ? RULES.woodBridge : RULES.metalBridge;
-    if (!canAfford(have, spec.cost)) return sfx.denied();
+    if (!turn.ok || !canAfford(have, spec.cost)) return sfx.denied();
     unlockAudio();
     sfx.build();
+    flash(`${kind} bridge at ${slot}`);
     appendGroup([
       ...costItems(teamId, spec.cost, `${kind} bridge`),
       {
@@ -260,6 +304,20 @@ export default function BoardScreen() {
         >
           🔄 Orbit
         </button>
+        {!turn.ok && state.phase !== "planning" && (
+          <span className={turn.waiting ? "turn-pill waiting" : "turn-pill"}>
+            {active ? `⏳ ${state.teams[active]?.config.name ?? ""} · ` : "⏳ "}
+            {turn.reason}
+          </span>
+        )}
+        {turn.ok &&
+          state.phase !== "planning" &&
+          state.turnOrder.length > 0 &&
+          identity.role !== "facilitator" && (
+            <span className="turn-pill live">
+              ▶ Your turn · {team?.actionTokens.available ?? 0} left
+            </span>
+          )}
         <span className="muted small">
           {orbit
             ? "Drag to spin · up and down raises or lowers the camera · double-click to reset"
@@ -270,6 +328,43 @@ export default function BoardScreen() {
                 : "View only — switch to Cartographer to edit"}
         </span>
       </div>
+
+      {seatOrder(state).length > 0 && (
+        <div className="seat-strip">
+          <button
+            className={followTurn ? "chip active" : "chip"}
+            title="Roll the map round to whichever team is playing"
+            onClick={() => {
+              sfx.tap();
+              const next = !followTurn;
+              setFollowTurn(next);
+              localStorage.setItem("bob-follow-seat", next ? "1" : "0");
+              if (next && active) lookFromSeat(active);
+            }}
+          >
+            🎯 Follow turn
+          </button>
+          <span className="seat-label">View from</span>
+          {seatOrder(state).map((tid) => {
+            const t = state.teams[tid];
+            if (!t) return null;
+            return (
+              <button
+                key={tid}
+                className={facing === tid ? "seat-chip active" : "seat-chip"}
+                style={{ "--team": t.config.color } as React.CSSProperties}
+                onClick={() => lookFromSeat(tid)}
+                title={`Look at the board from ${t.config.name}'s chair`}
+              >
+                {t.config.name}
+                {tid === active ? " ▶" : ""}
+              </button>
+            );
+          })}
+        </div>
+      )}
+
+      {sent && <div className="sent-flash">📨 Sent to your Leader — {sent}</div>}
 
       <div
         className="board-wrap"
@@ -320,17 +415,37 @@ export default function BoardScreen() {
                 aria-label="Camera pitch"
               />
               <span className="muted small">{activeCam.hint}</span>
-              <button
-                className={sky ? "chip active" : "chip"}
-                onClick={() => {
-                  const next = sky ? "" : "assets/sky.webp";
-                  setSky(next);
-                  localStorage.setItem("bob-sky", next);
-                  sfx.tap();
-                }}
-              >
-                {sky ? "🌅 World on" : "🌑 World off"}
-              </button>
+              <b className="small">World</b>
+              <div className="env-picker">
+                {ENVIRONMENTS.map((e) => (
+                  <button
+                    key={e.key}
+                    className={sky === e.key ? "env-chip active" : "env-chip"}
+                    style={{ "--env": e.swatch } as React.CSSProperties}
+                    onClick={() => {
+                      setSky(e.key);
+                      localStorage.setItem("bob-env", e.key);
+                      sfx.tap();
+                    }}
+                  >
+                    <span className="env-dot" />
+                    {e.label}
+                  </button>
+                ))}
+              </div>
+              <label className="cam-row">
+                <span className="small">Seat ring · line up with the room</span>
+                <input
+                  type="range"
+                  min={0}
+                  max={359}
+                  step={1}
+                  defaultValue={seatOffset()}
+                  onChange={(e) => setSeatOffset(Number(e.target.value))}
+                  onPointerUp={() => facing && lookFromSeat(facing)}
+                  aria-label="Rotate the whole seat ring to match the room"
+                />
+              </label>
               <button className="chip" onClick={() => { sfx.tap(); boardRef.current?.fitBoard(); glide(0, 0); }}>
                 Reset view
               </button>
@@ -363,10 +478,12 @@ export default function BoardScreen() {
               <div className="row wrap">
                 <button
                   className="chip danger"
-                  disabled={have.supply < 1}
+                  disabled={!turn.ok || have.supply < 1}
+                  title={turn.reason}
                   onClick={() => {
                     unlockAudio();
                     sfx.crumble();
+                    flash("Demolish wall");
                     appendGroup([
                       ...costItems(teamId, RULES.demolishWallCost, "Demolish wall"),
                       { type: "wall/remove", payload: { edge: sel.key }, note: "Wall demolished · 1📦" },
@@ -390,10 +507,12 @@ export default function BoardScreen() {
             <div className="row">
               <button
                 className="primary"
-                disabled={!canAfford(have, RULES.wall.cost)}
+                disabled={!turn.ok || !canAfford(have, RULES.wall.cost)}
+                title={turn.reason}
                 onClick={() => {
                   unlockAudio();
                   sfx.build();
+                  flash("Build wall");
                   appendGroup([
                     ...costItems(teamId, RULES.wall.cost, "Wall"),
                     {
@@ -534,12 +653,13 @@ export default function BoardScreen() {
                   const claimed = isActivated(tile, teamId);
                   return (
                     <button
-                      className={check.ok ? "chip" : "chip"}
-                      disabled={!check.ok}
-                      title={check.reason}
+                      className="chip"
+                      disabled={!check.ok || !turn.ok}
+                      title={turn.ok ? check.reason : turn.reason}
                       onClick={() => {
                         unlockAudio();
                         sfx.tap();
+                        flash(`Move to ${sel.key}`);
                         append("character/move", { teamId, slot: sel.key }, {
                           note: `${team?.config.name ?? "Team"} moved to ${sel.key}${claimed ? "" : " — tile claimed"}`,
                         });
@@ -554,10 +674,12 @@ export default function BoardScreen() {
               {tile.cardId === "GR05" && !tile.settled && (
                 <button
                   className="primary"
-                  disabled={!canAfford(have, RULES.nomadSettleCost)}
+                  disabled={!turn.ok || !canAfford(have, RULES.nomadSettleCost)}
+                  title={turn.reason}
                   onClick={() => {
                     unlockAudio();
                     sfx.texture.drums(3);
+                    flash("Settle the Nomad Tribe");
                     appendGroup([
                       ...costItems(teamId, RULES.nomadSettleCost, "Settle Nomad Tribe"),
                       {

@@ -1,9 +1,13 @@
 import { useEffect, useRef } from "react";
 import * as THREE from "three";
+import { environmentCanvas, environmentSrc, type EnvKey } from "../world/environments";
 
 interface Props {
-  /** Equirectangular 2:1 panorama, relative to /public. */
-  src: string;
+  /**
+   * Which world to stand the table in. "harbour" loads the photograph from
+   * /public; every other key is painted in code at first use.
+   */
+  env: EnvKey;
   rotation: number;
   tilt: number;
   width: number;
@@ -24,7 +28,7 @@ const SKY_RADIUS = 9000;
  * pitch 0 you are looking straight down at open water, and as the camera drops
  * the horizon rises into frame around the board.
  */
-export default function Sky360({ src, rotation, tilt, width, height, perspective }: Props) {
+export default function Sky360({ env, rotation, tilt, width, height, perspective }: Props) {
   const canvasRef = useRef<HTMLCanvasElement>(null);
   const ref = useRef<{
     renderer: THREE.WebGLRenderer;
@@ -57,15 +61,24 @@ export default function Sky360({ src, rotation, tilt, width, height, perspective
     sphere.rotation.x = Math.PI / 2; // zenith along the board normal
     yaw.add(sphere);
 
-    new THREE.TextureLoader().load(src, (tex) => {
+    const dress = (tex: THREE.Texture) => {
       tex.colorSpace = THREE.SRGBColorSpace;
       tex.mapping = THREE.EquirectangularReflectionMapping;
       tex.minFilter = THREE.LinearMipmapLinearFilter;
       tex.anisotropy = renderer.capabilities.getMaxAnisotropy();
+      tex.needsUpdate = true;
       mat.map = tex;
       mat.color.set(0xffffff);
       mat.needsUpdate = true;
-    });
+    };
+
+    const file = environmentSrc(env);
+    if (file) {
+      new THREE.TextureLoader().load(file, dress);
+    } else {
+      const cv = environmentCanvas(env);
+      if (cv) dress(new THREE.CanvasTexture(cv));
+    }
 
     const state = { renderer, scene, camera, pitch, yaw, raf: 0 };
     ref.current = state;
@@ -84,7 +97,7 @@ export default function Sky360({ src, rotation, tilt, width, height, perspective
       renderer.dispose();
       ref.current = null;
     };
-  }, [src]);
+  }, [env]);
 
   useEffect(() => {
     const r = ref.current;

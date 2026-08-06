@@ -166,10 +166,22 @@ export function applyEvent(st: DerivedState, ev: GameEvent): DerivedState {
       break;
     }
     case "token/use": {
-      const team = s.teams[p["teamId"] as string];
+      const teamId = p["teamId"] as string;
+      const team = s.teams[teamId];
       if (team && team.actionTokens.available > 0) {
         team.actionTokens.available -= 1;
         team.actionTokens.used += 1;
+        // Spending the third action passes the table on. Doing this in the
+        // reducer rather than in a button handler means every route to an
+        // action -- Board tab, Actions tab, an approved proposal -- advances
+        // the turn identically, and undo rewinds it for free.
+        if (
+          team.actionTokens.available === 0 &&
+          s.turnOrder.length > 0 &&
+          s.turnOrder[s.activeTurnIndex] === teamId
+        ) {
+          s.activeTurnIndex = (s.activeTurnIndex + 1) % s.turnOrder.length;
+        }
       }
       break;
     }
