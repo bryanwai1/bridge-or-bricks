@@ -37,8 +37,9 @@ export function serviceUrl(port: number, scheme: "http" | "ws"): string {
  * LAN: the phone cannot use "localhost", so the relay tells us the host's
  * real address and we use that instead.
  */
-export function joinUrl(teamId: string, lanIp: string | null): string {
-  if (isCloudHosted()) return `${location.origin}/?team=${teamId}`;
+export function joinUrl(teamId: string, lanIp: string | null, code?: string): string {
+  const q = code ? `?s=${code}&team=${teamId}` : `?team=${teamId}`;
+  if (isCloudHosted()) return `${location.origin}/${q}`;
   const host = lanIp ?? location.hostname;
-  return `http://${host}:${location.port || "5173"}/?team=${teamId}`;
+  return `http://${host}:${location.port || "5173"}/${q}`;
 }

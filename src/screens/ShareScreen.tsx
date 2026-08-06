@@ -2,6 +2,7 @@ import { useEffect, useState } from "react";
 import QRCode from "qrcode";
 import { RELAY_PORT, useStore } from "../state/store";
 import { isCloudHosted, joinUrl, serviceUrl } from "../net";
+import { sessionCode } from "../net/supabase";
 
 export default function ShareScreen() {
   const { state } = useStore();
@@ -9,6 +10,7 @@ export default function ShareScreen() {
   const [qrs, setQrs] = useState<Record<string, string>>({});
 
   const cloud = isCloudHosted();
+  const code = sessionCode();
 
   useEffect(() => {
     // hosted in the cloud, this origin already reaches every phone — there is
@@ -33,19 +35,22 @@ export default function ShareScreen() {
     (async () => {
       const out: Record<string, string> = {};
       for (const tid of state.teamOrder) {
-        out[tid] = await QRCode.toDataURL(joinUrl(tid, ip), { width: 360, margin: 1 });
+        out[tid] = await QRCode.toDataURL(joinUrl(tid, ip, code), { width: 360, margin: 1 });
       }
       if (alive) setQrs(out);
     })();
     return () => {
       alive = false;
     };
-  }, [cloud, ip, state.teamOrder]);
+  }, [cloud, ip, code, state.teamOrder]);
 
   return (
     <div className="stack">
       <div className="card">
         <b>📱 Team join QR codes</b>
+        <p className="session-code">
+          Session <b>{code}</b>
+        </p>
         <p className="muted small">
           {cloud
             ? "Hosted in the cloud — players scan their team's QR from any network, including mobile data. No shared wifi needed."

@@ -1726,3 +1726,16 @@ html{background:var(--bg)}
 /* the ring takes whatever is left, and never pushes the chrome off-screen */
 .picker-overlay .ring-wrap,
 .picker-overlay .card-ring{min-height:0}
+
+.session-code{
+  margin:2px 0 0;
+  font-size:.78rem;
+  letter-spacing:.08em;
+  color:var(--muted);
+}
+.session-code b{
+  font-family:var(--mono);
+  font-size:1.15rem;
+  letter-spacing:.22em;
+  color:var(--accent-2);
+}
