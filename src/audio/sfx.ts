@@ -156,10 +156,42 @@ function noise({
 
 const texture = {
   /** Wolves. Two voices, slightly detuned, so it reads as a pack. */
+  /**
+   * A wolf, not a buzzer.
+   *
+   * The old howl was a raw sawtooth with 12Hz vibrato at gain 0.2. Sawtooth
+   * carries strong harmonics all the way up, so at 600Hz it puts energy past
+   * 5kHz — that reads as a broken synth, not an animal. Two stacked at 0.2 and
+   * 0.13 plus noise also clipped the master.
+   *
+   * A real howl is a near-sine fundamental with one soft octave partial, slow
+   * vibrato around 5Hz, a long rounded envelope, and breath underneath.
+   */
   howl: () => {
-    glide([[0, 300], [0.25, 680], [0.6, 640], [1, 260]], { gain: 0.2, dur: 1.5, vibrato: 12, type: "sawtooth" });
-    glide([[0, 280], [0.3, 620], [0.65, 590], [1, 240]], { gain: 0.13, dur: 1.6, delay: 0.22, vibrato: 9, type: "triangle" });
-    noise({ dur: 1.4, gain: 0.05, cutoff: 700, type: "bandpass", q: 0.8, fade: "swell" });
+    // fundamental: rise, hold, and fall away
+    glide([[0, 240], [0.18, 520], [0.55, 500], [0.8, 470], [1, 210]], {
+      gain: 0.17,
+      dur: 2.1,
+      vibrato: 5,
+      type: "sine",
+    });
+    // one octave above, quiet — gives it body without brightness
+    glide([[0, 480], [0.18, 1040], [0.55, 1000], [0.8, 940], [1, 420]], {
+      gain: 0.045,
+      dur: 2.1,
+      vibrato: 5,
+      type: "triangle",
+    });
+    // a second wolf answering, further off
+    glide([[0, 230], [0.2, 470], [0.6, 450], [1, 200]], {
+      gain: 0.06,
+      dur: 1.9,
+      delay: 0.62,
+      vibrato: 4,
+      type: "sine",
+    });
+    // breath
+    noise({ dur: 1.9, gain: 0.022, cutoff: 520, type: "lowpass", q: 0.6, fade: "swell" });
   },
 
   /** Running water, with a few bubbles on top. */
@@ -350,16 +382,66 @@ const CARD_SOUND: Record<string, () => void> = {
   EG04: () => { texture.drums(5); texture.clash(); },
 };
 
+/**
+ * Fallback textures.
+ *
+ * Only 26 of the 84 cards had a sound of their own, so everything else landed
+ * on one generic sting per deck — which is why so many cards sounded alike.
+ * Rather than hand-authoring 58 more, cards without an entry get a texture
+ * chosen deterministically from their id, so a given card always sounds the
+ * same but its neighbours do not.
+ */
+const ORANGE_BED: (() => void)[] = [
+  () => texture.wind(),
+  () => texture.rumble(),
+  () => texture.market(),
+  () => texture.eerie(),
+  () => texture.fire(),
+  () => { texture.wind(); texture.chimes(); },
+  () => texture.water(),
+];
+
+const RED_BED: (() => void)[] = [
+  () => texture.clash(),
+  () => texture.rumble(),
+  () => texture.fire(),
+  () => texture.eerie(),
+  () => { texture.drums(4); texture.rumble(); },
+  () => { texture.clash(); texture.wind(); },
+];
+
+const GREEN_BED: (() => void)[] = [
+  () => texture.wind(),
+  () => texture.birds(),
+  () => { texture.wind(); texture.chimes(); },
+  () => texture.water(),
+];
+
+/** Stable per-card index, so the same card always gets the same texture. */
+function idHash(cardId: string): number {
+  let h = 0;
+  for (let i = 0; i < cardId.length; i++) h = (h * 31 + cardId.charCodeAt(i)) >>> 0;
+  return h;
+}
+
 /** The sting that plays the instant a card lands face-up. */
 export function playRevealFor(cardId: string) {
   const specific = CARD_SOUND[cardId];
+  if (cardId.startsWith("RD")) sfx.red();
+  else if (cardId.startsWith("OR")) sfx.orange();
+  else if (!specific) sfx.flip();
+
   if (specific) {
-    if (cardId.startsWith("RD")) sfx.red();
-    else if (cardId.startsWith("OR")) sfx.orange();
     specific();
     return;
   }
-  if (cardId.startsWith("RD") || cardId.startsWith("EG")) return sfx.red();
-  if (cardId.startsWith("OR")) return sfx.orange();
-  sfx.flip();
+
+  const h = idHash(cardId);
+  if (cardId.startsWith("RD") || cardId.startsWith("EG")) {
+    RED_BED[h % RED_BED.length]();
+  } else if (cardId.startsWith("OR")) {
+    ORANGE_BED[h % ORANGE_BED.length]();
+  } else {
+    GREEN_BED[h % GREEN_BED.length]();
+  }
 }

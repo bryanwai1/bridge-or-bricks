@@ -14,11 +14,14 @@ import type { ResourceKind } from "../types";
 
 /** Camera presets. 0 is the printed mat seen from directly above. */
 const CAMERAS = [
-  { deg: 0, label: "Top", hint: "Straight down — matches the printed mat" },
-  { deg: 30, label: "Raised", hint: "Slight pitch, still easy to read" },
-  { deg: 48, label: "Angled", hint: "Table view — depth without losing the far rows" },
-  { deg: 62, label: "Low", hint: "Down at table level, most dramatic" },
+  { deg: 0, label: "Flat", hint: "Straight down — matches the printed mat exactly" },
+  { deg: 16, label: "Read", hint: "Card art stays legible, with just enough depth" },
+  { deg: 40, label: "Table", hint: "Sitting at the table — depth without losing the far rows" },
+  { deg: 60, label: "Low", hint: "Down at table level, most dramatic, hardest to read" },
 ];
+
+/** The art on the tiles is flat, so a shallow pitch reads best. */
+const DEFAULT_TILT = 16;
 
 const costItems = (teamId: string, cost: CostBag, label: string) =>
   (Object.entries(cost) as [ResourceKind, number][]).map(([resource, amount]) => ({
@@ -39,7 +42,9 @@ export default function BoardScreen() {
   const [reveal, setReveal] = useState<{ cardId: string; slot: string; subtitle: string; origin: RevealOrigin | null } | null>(null);
   const boardRef = useRef<BoardHandle | null>(null);
   const [rotation, setRotation] = useState(0);
-  const [tilt, setTilt] = useState(() => Number(localStorage.getItem("bob-tilt") ?? 0));
+  const [tilt, setTilt] = useState(
+    () => Number(localStorage.getItem("bob-tilt") ?? DEFAULT_TILT),
+  );
   const [showCam, setShowCam] = useState(false);
   const [sky, setSky] = useState<EnvKey>(
     () => (localStorage.getItem("bob-env") as EnvKey) ?? "grove",
@@ -123,20 +128,40 @@ export default function BoardScreen() {
      the SVG mat while the WebGL layers snap, and the two would visibly part
      company for half a second on every move. */
   const anim = useRef(0);
+  /* Live mirrors of the camera. The old glide() read progress out of the
+     React state updaters — but those run at render time, not when called, so
+     `done` was always still true and the loop stopped after ONE frame. The
+     camera moved 18% of the way to the preset and halted, which is exactly
+     what "it doesn't listen" looks like. Refs update synchronously, so the
+     loop can actually see where it has got to. */
+  const tiltRef = useRef(tilt);
+  const rotRef = useRef(rotation);
+  useEffect(() => { tiltRef.current = tilt; }, [tilt]);
+  useEffect(() => { rotRef.current = rotation; }, [rotation]);
+
   const glide = (toTilt: number, toRot: number) => {
     cancelAnimationFrame(anim.current);
     const step = () => {
       let done = true;
-      setTilt((t) => {
-        const d = toTilt - t;
-        if (Math.abs(d) > 0.15) { done = false; return t + d * 0.18; }
-        return toTilt;
-      });
-      setRotation((r) => {
-        let d = ((toRot - r + 540) % 360) - 180;
-        if (Math.abs(d) > 0.15) { done = false; return (r + d * 0.18 + 360) % 360; }
-        return (toRot + 360) % 360;
-      });
+
+      const dt = toTilt - tiltRef.current;
+      if (Math.abs(dt) > 0.15) {
+        done = false;
+        tiltRef.current += dt * 0.18;
+      } else {
+        tiltRef.current = toTilt;
+      }
+      setTilt(tiltRef.current);
+
+      let dr = ((toRot - rotRef.current + 540) % 360) - 180;
+      if (Math.abs(dr) > 0.15) {
+        done = false;
+        rotRef.current = (rotRef.current + dr * 0.18 + 360) % 360;
+      } else {
+        rotRef.current = (toRot + 360) % 360;
+      }
+      setRotation(rotRef.current);
+
       if (!done) anim.current = requestAnimationFrame(step);
     };
     anim.current = requestAnimationFrame(step);
@@ -418,7 +443,7 @@ export default function BoardScreen() {
 
       <div
         className="board-wrap"
-        onDoubleClick={() => { sfx.tap(); boardRef.current?.fitBoard(); glide(0, 0); }}
+        onDoubleClick={() => { sfx.tap(); boardRef.current?.fitBoard(); glide(DEFAULT_TILT, 0); }}
       >
         <HexBoard
           ref={boardRef}
@@ -503,7 +528,7 @@ export default function BoardScreen() {
                   aria-label="Rotate the whole seat ring to match the room"
                 />
               </label>
-              <button className="chip" onClick={() => { sfx.tap(); boardRef.current?.fitBoard(); glide(0, 0); }}>
+              <button className="chip" onClick={() => { sfx.tap(); boardRef.current?.fitBoard(); glide(DEFAULT_TILT, 0); }}>
                 Reset view
               </button>
             </div>

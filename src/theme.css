@@ -1529,3 +1529,39 @@ html{background:var(--bg)}
 @media (prefers-reduced-motion: reduce){
   .move-target{animation:none;opacity:.85}
 }
+
+/* ============================================================
+   ROUND 19 — CARD REVEAL LIGHT
+   Hard-edged polygons and marching dashes read as broken
+   geometry. Light is soft, continuous and slow.
+   ============================================================ */
+
+.rv-tether{
+  stroke-dasharray:none !important;
+  animation:tetherPulse 2.4s ease-in-out infinite !important;
+  opacity:.5;
+}
+@keyframes tetherPulse{
+  0%,100%{opacity:.22}
+  50%{opacity:.62}
+}
+.rv-cone{
+  mix-blend-mode:screen;
+  opacity:.7;
+  animation:coneBreathe 5.2s ease-in-out infinite !important;
+}
+@keyframes coneBreathe{
+  0%,100%{opacity:.58}
+  50%{opacity:.8}
+}
+.rv-vee{
+  mix-blend-mode:screen;
+  animation:veeBreathe 6s ease-in-out infinite !important;
+}
+.rv-pool{
+  mix-blend-mode:screen;
+  animation:coneBreathe 5.2s ease-in-out infinite;
+}
+@media (prefers-reduced-motion: reduce){
+  .rv-tether,.rv-cone,.rv-vee,.rv-pool{animation:none !important}
+}

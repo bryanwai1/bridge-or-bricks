@@ -96,26 +96,51 @@ export default function CardReveal({ cardId, origin, subtitle, onResolveAction, 
             </linearGradient>
             <linearGradient id="rvVee" x1="0" y1="0" x2="0" y2="1">
               <stop offset="0%" stopColor="var(--ray)" stopOpacity="0" />
-              <stop offset="55%" stopColor="var(--ray)" stopOpacity="0.16" />
-              <stop offset="100%" stopColor="var(--ray)" stopOpacity="0.42" />
+              <stop offset="55%" stopColor="var(--ray)" stopOpacity="0.13" />
+              <stop offset="100%" stopColor="var(--ray)" stopOpacity="0.3" />
             </linearGradient>
+            {/* Light has no hard edges. Without this the cone and the shaft
+                render as crisp polygons and read as broken geometry rather
+                than as a projection. */}
+            <filter id="rvSoft" x="-30%" y="-30%" width="160%" height="160%">
+              <feGaussianBlur stdDeviation="9" />
+            </filter>
+            <filter id="rvSoftEdge" x="-40%" y="-40%" width="180%" height="180%">
+              <feGaussianBlur stdDeviation="3.5" />
+            </filter>
+            <radialGradient id="rvPool">
+              <stop offset="0%" stopColor="var(--ray)" stopOpacity="0.4" />
+              <stop offset="100%" stopColor="var(--ray)" stopOpacity="0" />
+            </radialGradient>
           </defs>
 
           {/* V of light falling onto the hologram from above */}
           <polygon
             className="rv-vee"
             fill="url(#rvVee)"
-            points={`${geo.cx - 10},-20 ${geo.cx + 10},-20 ${geo.holo.r + 34},${geo.holo.b} ${geo.holo.l - 34},${geo.holo.b}`}
+            filter="url(#rvSoft)"
+            points={`${geo.cx - 46},-40 ${geo.cx + 46},-40 ${geo.holo.r + 54},${geo.holo.b} ${geo.holo.l - 54},${geo.holo.b}`}
+          />
+          {/* where the shaft lands */}
+          <ellipse
+            className="rv-pool"
+            cx={geo.cx}
+            cy={geo.holo.b}
+            rx={(geo.holo.r - geo.holo.l) * 0.85}
+            ry={26}
+            fill="url(#rvPool)"
           />
 
           {/* projection cone: two side faces from the map tile up to the hologram */}
           <polygon
             className="rv-cone"
+            filter="url(#rvSoft)"
             fill="url(#rvBeam)"
             points={`${geo.small.l},${geo.small.t} ${geo.holo.l},${geo.holo.t} ${geo.holo.l},${geo.holo.b} ${geo.small.l},${geo.small.b}`}
           />
           <polygon
             className="rv-cone"
+            filter="url(#rvSoft)"
             fill="url(#rvBeam)"
             points={`${geo.small.r},${geo.small.t} ${geo.holo.r},${geo.holo.t} ${geo.holo.r},${geo.holo.b} ${geo.small.r},${geo.small.b}`}
           />
@@ -130,10 +155,12 @@ export default function CardReveal({ cardId, origin, subtitle, onResolveAction, 
             <line
               key={i}
               className="rv-tether"
+              filter="url(#rvSoftEdge)"
               x1={x1} y1={y1} x2={x2} y2={y2}
               stroke="var(--ray)"
-              strokeWidth={1.6}
-              style={{ animationDelay: `${i * 60}ms` }}
+              strokeWidth={2.4}
+              strokeLinecap="round"
+              style={{ animationDelay: `${i * 120}ms` }}
             />
           ))}
         </svg>
