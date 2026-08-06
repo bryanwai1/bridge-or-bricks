@@ -30,6 +30,16 @@ export const RULES = {
   woodBridge: { cost: { brick: 2 } as CostBag, durability: 2, status: "playtest" as const },
   metalBridge: { cost: { brick: 1, metal: 1 } as CostBag, durability: 4, status: "playtest" as const },
   wall: { cost: { brick: 1 } as CostBag, durability: 2, status: "playtest" as const },
+  /* Creator ruling: walls AND both bridges last two rounds, and a repair
+     buys back one round. Upkeep-by-payment is gone — a structure is kept
+     alive by spending an action on it, not by quietly paying rent. */
+  repair: {
+    wall: { brick: 1 } as CostBag,
+    wood: { brick: 1 } as CostBag,
+    metal: { brick: 1 } as CostBag,
+  },
+  structureDecayPerRound: 1,
+  maxDurability: 2,
 
   bridgeUpkeepPerBridge: { brick: 1 } as CostBag, // playtest
   wallsDecayPerRound: 1, // confirmed — walls cannot be maintained
@@ -292,43 +302,32 @@ export function planRound(state: DerivedState): RoundPlan {
     }
   }
 
-  const upkeep = RULES.bridgeUpkeepPerBridge.brick ?? 0;
+  /* Every bridge loses a point each Maintenance Phase, whoever owns it, so
+     two rounds is the natural life of anything built. Spending an action to
+     repair is what makes a structure last. */
   for (const teamId of state.teamOrder) {
     const team = state.teams[teamId];
     if (!team) continue;
-    const bridges = teamBridges(state, teamId);
-    if (bridges.length === 0) continue;
-
-    const after = team.resources.brick + (production[teamId]?.bricks ?? 0);
-    const affordable = upkeep > 0 ? Math.floor(after / upkeep) : bridges.length;
-    const paid = Math.min(bridges.length, affordable);
-    const unpaid = bridges.length - paid;
-
-    if (paid > 0) {
-      items.push({
-        type: "resource/change",
-        payload: { teamId, resource: "brick", delta: -(paid * upkeep) },
-        note: `🔧 ${team.config.name}: upkeep −${paid * upkeep}🧱 for ${paid} bridge${paid === 1 ? "" : "s"}`,
-      });
-    }
-    for (const { slot, bridge } of bridges.slice(paid)) {
-      const left = bridge.durability - 1;
+    for (const { slot, bridge } of teamBridges(state, teamId)) {
+      const left = bridge.durability - RULES.structureDecayPerRound;
       if (left <= 0) {
         items.push({
           type: "bridge/remove",
           payload: { slot, bridgeId: bridge.id },
-          note: `💥 ${team.config.name}: unpaid ${bridge.type} bridge collapsed at ${slot}`,
+          note: `💥 ${team.config.name}: ${bridge.type} bridge collapsed at ${slot}`,
         });
         maintenanceLog.push(`${team.config.name}: ${bridge.type} bridge collapsed at ${slot}`);
       } else {
         items.push({
           type: "bridge/durability",
-          payload: { slot, bridgeId: bridge.id, delta: -1 },
-          note: `🔧 ${team.config.name}: unpaid bridge at ${slot} → durability ${left}`,
+          payload: { slot, bridgeId: bridge.id, delta: -RULES.structureDecayPerRound },
+          note: `🔧 ${team.config.name}: ${bridge.type} bridge at ${slot} → ${left}`,
         });
+        if (left === 1) {
+          maintenanceLog.push(`${team.config.name}: ${bridge.type} bridge at ${slot} is one round from collapse`);
+        }
       }
     }
-    if (unpaid > 0) maintenanceLog.push(`${team.config.name}: ${unpaid} bridge upkeep unpaid`);
   }
 
   return { items, production, maintenanceLog };

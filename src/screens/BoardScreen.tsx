@@ -235,10 +235,53 @@ export default function BoardScreen() {
     return null;
   };
 
+  /** Anything already built that is below full strength. */
+  const repairAt = (key: string): { kind: "wood" | "metal"; id: string } | null => {
+    const worn = (state.bridges[key] ?? []).find((b) => b.durability < RULES.maxDurability);
+    return worn ? { kind: worn.type, id: worn.id } : null;
+  };
+
+  const repairBridge = (key: string) => {
+    const worn = repairAt(key);
+    if (!worn) return false;
+    const cost = RULES.repair[worn.kind];
+    if (!turn.ok) {
+      setDenied(turn.reason ?? "Not your turn.");
+      sfx.denied();
+      return true;
+    }
+    if (!canAfford(have, cost)) {
+      setDenied(`Repairing a ${worn.kind} bridge costs ${costLabel(cost)}.`);
+      sfx.denied();
+      return true;
+    }
+    unlockAudio();
+    sfx.build();
+    flash(`Repair ${worn.kind} bridge at ${key}`);
+    appendGroup([
+      { type: "token/use", payload: { teamId } },
+      ...Object.entries(cost).map(([res, amt]) => ({
+        type: "resource/change" as const,
+        payload: { teamId, resource: res, delta: -(amt as number) },
+      })),
+      {
+        type: "bridge/durability",
+        payload: { slot: key, bridgeId: worn.id, delta: 1 },
+        note: `🔧 ${team?.config.name}: repaired the ${worn.kind} bridge at ${key}`,
+      },
+    ]);
+    return true;
+  };
+
   const bridgeTargets = useMemo(() => {
     if (tool !== "bridge") return new Set<string>();
     const out = new Set<string>();
-    for (const key of Object.keys(state.tiles)) if (bridgeNeededAt(key)) out.add(key);
+    for (const key of Object.keys(state.tiles)) {
+      if (bridgeNeededAt(key)) out.add(key);
+      // already spanned but wearing out — tapping repairs instead of building
+      else if ((state.bridges[key] ?? []).some((b) => b.durability < RULES.maxDurability))
+        out.add(key);
+    }
     return out;
      
   }, [tool, state]);
@@ -430,7 +473,7 @@ export default function BoardScreen() {
               ? "Tap a gap between two tiles to build or clear a wall"
               : tool === "bridge"
                 ? bridgeTargets.size > 0
-                  ? `Tap a glowing hex to span it · River needs wood ${costLabel(RULES.woodBridge.cost)} · Valley needs metal ${costLabel(RULES.metalBridge.cost)}`
+                  ? `Tap a glowing hex to span or repair it · wood ${costLabel(RULES.woodBridge.cost)} · metal ${costLabel(RULES.metalBridge.cost)} · repair ${costLabel(RULES.repair.wood)} · everything lasts 2 rounds`
                   : "No open River or Valley needs a bridge yet"
                 : tool === "move"
                   ? moveTargets.size > 0
@@ -496,6 +539,7 @@ export default function BoardScreen() {
               return;
             }
             if (tool === "bridge" && s.kind === "slot") {
+              if (repairBridge(s.key)) return;
               const need = bridgeNeededAt(s.key);
               if (!need) {
                 setDenied("Only an open River or Valley can take a bridge.");

@@ -20,6 +20,7 @@ import {
 import { CARD_BY_ID } from "../data/catalog";
 import { DECK_BACK, deckOf } from "../data/gates";
 import Sky360 from "./Sky360";
+import Props3D from "./Props3D";
 import type { EnvKey } from "../world/environments";
 
 export interface BoardSelection {
@@ -322,6 +323,17 @@ const HexBoard = forwardRef<BoardHandle, Props>(function HexBoard(
           perspective={PERSPECTIVE}
         />
       )}
+      <Props3D
+        state={state}
+        view={view}
+        rotation={rotation}
+        tilt={tilt}
+        camScale={camScale}
+        camOffset={camOffset}
+        width={box.w}
+        height={box.h}
+        perspective={PERSPECTIVE}
+      />
       <svg
         ref={svgRef}
         className="hexboard"
