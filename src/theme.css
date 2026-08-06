@@ -1686,3 +1686,43 @@ html{background:var(--bg)}
 
 .float-home{position:fixed;left:74px;top:14px;z-index:60;opacity:.28}
 .float-home:hover{opacity:1}
+
+/* ============================================================
+   ROUND 22 — PICKER LAYOUT
+   The deck chooser sat at the very bottom of a full-screen
+   overlay, underneath the tab bar, so the categories were
+   clipped and half of them unreachable. It belongs at the top:
+   you choose the deck first, then browse it.
+   ============================================================ */
+
+.picker-overlay{
+  /* clear the tab bar and the phone's home indicator */
+  padding-bottom:calc(78px + env(safe-area-inset-bottom));
+}
+
+.picker-decks{
+  order:-1;
+  flex:0 0 auto;
+  display:flex;
+  flex-wrap:nowrap;
+  justify-content:flex-start;
+  gap:6px;
+  width:100%;
+  margin-top:10px;
+  padding:2px 14px 10px;
+  overflow-x:auto;
+  scrollbar-width:none;
+  border-bottom:1px solid var(--line);
+}
+.picker-decks::-webkit-scrollbar{display:none}
+.picker-decks .chip.deck{
+  flex:0 0 auto;
+  padding:8px 14px;
+  font-size:.8rem;
+  border-radius:999px;
+}
+.picker-decks .chip.deck.locked{opacity:.5}
+
+/* the ring takes whatever is left, and never pushes the chrome off-screen */
+.picker-overlay .ring-wrap,
+.picker-overlay .card-ring{min-height:0}

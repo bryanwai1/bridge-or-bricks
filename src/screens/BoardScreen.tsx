@@ -667,6 +667,29 @@ export default function BoardScreen() {
             <b>⬢ Hex {sel.key}</b>
             <button className="chip" onClick={close}>✕</button>
           </div>
+          <div className="picker-decks">
+            {DECKS.map((d) => {
+              const locked = Boolean(gates[d.key]?.locked);
+              return (
+                <button
+                  key={d.key}
+                  className={
+                    (pickerDeck === d.key && !query ? "chip deck active" : "chip deck") +
+                    (locked ? " locked" : "")
+                  }
+                  style={{ "--deck": d.color } as React.CSSProperties}
+                  onClick={() => {
+                    sfx.tap();
+                    setPickerDeck(d.key);
+                    setQuery("");
+                  }}
+                >
+                  <span className="dot" style={{ background: d.color }} />
+                  {locked ? `🔒 ${d.label}` : d.label}
+                </button>
+              );
+            })}
+          </div>
           <input
             className="card-search"
             placeholder="🔍 Search card title…"
@@ -695,29 +718,6 @@ export default function BoardScreen() {
             </p>
           )}
 
-          <div className="picker-decks">
-            {DECKS.map((d) => {
-              const locked = Boolean(gates[d.key]?.locked);
-              return (
-                <button
-                  key={d.key}
-                  className={
-                    (pickerDeck === d.key && !query ? "chip deck active" : "chip deck") +
-                    (locked ? " locked" : "")
-                  }
-                  style={{ "--deck": d.color } as React.CSSProperties}
-                  onClick={() => {
-                    sfx.tap();
-                    setPickerDeck(d.key);
-                    setQuery("");
-                  }}
-                >
-                  <span className="dot" style={{ background: d.color }} />
-                  {locked ? `🔒 ${d.label}` : d.label}
-                </button>
-              );
-            })}
-          </div>
         </div>
       )}
 
