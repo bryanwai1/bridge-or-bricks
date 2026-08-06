@@ -1,33 +1,20 @@
 import { useEffect, useState } from "react";
 import QRCode from "qrcode";
-import { RELAY_PORT, useStore } from "../state/store";
-import { isCloudHosted, joinUrl, serviceUrl } from "../net";
+import { useStore } from "../state/store";
+import { isPubliclyReachable, joinUrl } from "../net";
 import { sessionCode } from "../net/supabase";
 
 export default function ShareScreen() {
   const { state } = useStore();
+  /* Only meaningful when developing on localhost: without a relay to ask,
+     the machine's LAN address has to be typed in by hand. Deployed, the
+     origin already works and this stays null. */
   const [ip, setIp] = useState<string | null>(null);
   const [qrs, setQrs] = useState<Record<string, string>>({});
 
-  const cloud = isCloudHosted();
+  const cloud = isPubliclyReachable();
   const code = sessionCode();
 
-  useEffect(() => {
-    // hosted in the cloud, this origin already reaches every phone — there is
-    // no LAN address to look up
-    if (cloud) return;
-    fetch(`${serviceUrl(RELAY_PORT, "http")}/info`)
-      .then((r) => r.json())
-      .then((info: { ips: string[] }) => {
-        const best =
-          info.ips.find((i) => i.startsWith("192.168.")) ??
-          info.ips.find((i) => i.startsWith("10.")) ??
-          info.ips[0] ??
-          location.hostname;
-        setIp(best);
-      })
-      .catch(() => setIp(location.hostname));
-  }, [cloud]);
 
   useEffect(() => {
     if (!cloud && !ip) return;
@@ -66,6 +53,20 @@ export default function ShareScreen() {
               Host: <code>http://{ip}:{location.port || "5173"}</code>
             </p>
           )
+        )}
+        {!cloud && (
+          <label className="lan-row">
+            <span className="small">
+              Serving from <code>{location.hostname}</code> — a phone cannot reach that.
+              Type this computer's LAN address to make the QR codes work.
+            </span>
+            <input
+              className="setup-input"
+              placeholder="192.168.1.x"
+              value={ip ?? ""}
+              onChange={(e) => setIp(e.target.value.trim() || null)}
+            />
+          </label>
         )}
         {cloud && (
           <p className="rv-tag">

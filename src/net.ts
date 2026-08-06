@@ -1,45 +1,43 @@
 /**
- * Where do the other pieces of the app live?
+ * Where does a player's phone need to go?
  *
- * On a LAN the relay is a port on the same machine: http://192.168.1.5:5200.
- * In a cloud dev environment (Codespaces, Gitpod) every port is forwarded to
- * its OWN subdomain over https instead — <name>-5200.app.github.dev — so
- * "same host, different port" is wrong there and nothing connects.
+ * There used to be a second service on port 5200 and this file existed to
+ * find it. That relay is gone — Supabase carries the sync now — so the only
+ * question left is what URL to put inside a join QR code.
  *
- * Everything that needs to reach the relay or build a join link goes through
- * here, so there is exactly one place to change when hosting changes.
+ * The answer is almost always "this origin". It stops being true only when
+ * the app is served from localhost or a bare LAN address, because a phone
+ * cannot resolve "localhost" and will not see 127.0.0.1.
  */
 
-const CLOUD_HOST = /^(.*)-(\d+)\.(app\.github\.dev|githubpreview\.dev|gitpod\.io)$/;
+const LOCAL_HOST = /^(localhost|127\.0\.0\.1|\[?::1\]?|0\.0\.0\.0)$/i;
+const LAN_IP = /^(10|127|169\.254|172\.(1[6-9]|2\d|3[01])|192\.168)\./;
 
-/** True when the app is served from a forwarded cloud port. */
-export function isCloudHosted(): boolean {
-  return CLOUD_HOST.test(location.hostname);
+/**
+ * True when this origin is reachable from any phone on any network —
+ * Vercel, Codespaces, a real domain. False for localhost and LAN IPs.
+ */
+export function isPubliclyReachable(): boolean {
+  const h = location.hostname;
+  if (LOCAL_HOST.test(h)) return false;
+  if (LAN_IP.test(h)) return false;
+  return true;
 }
 
-/** Base URL for a sibling service on the given port, http(s) or ws(s). */
-export function serviceUrl(port: number, scheme: "http" | "ws"): string {
-  const m = location.hostname.match(CLOUD_HOST);
-  if (m) {
-    // cloud: swap the port segment of the subdomain, always TLS
-    const secure = scheme === "ws" ? "wss" : "https";
-    return `${secure}://${m[1]}-${port}.${m[3]}`;
-  }
-  const plain = scheme === "ws" ? "ws" : "http";
-  return `${plain}://${location.hostname}:${port}`;
-}
+/** Kept under the old name so existing call sites keep reading naturally. */
+export const isCloudHosted = isPubliclyReachable;
 
 /**
  * The URL a player's phone should open to join a team.
  *
- * Cloud: this origin already works from anywhere, including mobile data —
- * no shared wifi needed, provided the port is set to Public visibility.
- * LAN: the phone cannot use "localhost", so the relay tells us the host's
- * real address and we use that instead.
+ * The session code rides along so a scanned QR lands on the right table even
+ * if that phone was in a different game earlier.
  */
 export function joinUrl(teamId: string, lanIp: string | null, code?: string): string {
   const q = code ? `?s=${code}&team=${teamId}` : `?team=${teamId}`;
-  if (isCloudHosted()) return `${location.origin}/${q}`;
+  if (isPubliclyReachable()) return `${location.origin}/${q}`;
+  // developing on localhost: the phone needs the machine's LAN address, and
+  // port 5173 is Vite's, not a service of ours
   const host = lanIp ?? location.hostname;
-  return `http://${host}:${location.port || "5173"}/${q}`;
+  return `${location.protocol}//${host}:${location.port || "5173"}/${q}`;
 }

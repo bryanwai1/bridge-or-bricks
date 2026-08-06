@@ -1809,3 +1809,6 @@ html{background:var(--bg)}
   pointer-events:none;
   z-index:3;
 }
+
+.lan-row{display:flex;flex-direction:column;gap:5px;width:100%;margin:6px 0}
+.lan-row code{font-family:var(--mono);color:var(--accent-2)}
