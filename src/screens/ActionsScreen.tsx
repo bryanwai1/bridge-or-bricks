@@ -15,6 +15,8 @@ import {
 } from "../data/rules";
 import { isMuted, sfx, toggleMute, unlockAudio } from "../audio/sfx";
 import CardReveal from "../components/CardReveal";
+import ProposalPreview from "../components/ProposalPreview";
+import TradeDesk from "./TradeDesk";
 import { activeTeamId, canAct, roundComplete } from "../data/turn";
 import { describeBag, exposures, hazardToll } from "../data/hazards";
 import {
@@ -414,6 +416,7 @@ export default function ActionsScreen() {
                 <b>{state.teams[pr.teamId ?? ""]?.config.name ?? "?"}</b>
                 {pr.role ? ` · ${pr.role}` : ""} — {pr.summary}
               </span>
+              <ProposalPreview state={state} pr={pr} />
               <span className="row">
                 <button
                   className="chip"
@@ -439,6 +442,8 @@ export default function ActionsScreen() {
           ))}
         </div>
       )}
+
+      {!planning && <TradeDesk teamId={teamId} />}
 
       {!canApprove && myPending.length > 0 && (
         <div className="card">

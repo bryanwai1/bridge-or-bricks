@@ -30,6 +30,7 @@ export function emptyState(): DerivedState {
     negotiations: {},
     endgameDrawn: [],
     gateEntered: [],
+    trades: {},
     recentNotes: [],
   };
 }
@@ -217,6 +218,58 @@ export function applyEvent(st: DerivedState, ev: GameEvent): DerivedState {
     case "action/log":
     case "note/add":
       break;
+    /* ---- trading between teams ---- */
+    case "trade/offer": {
+      const id = p["id"] as string;
+      s.trades[id] = {
+        id,
+        fromTeamId: p["fromTeamId"] as string,
+        toTeamId: p["toTeamId"] as string,
+        give: (p["give"] as Record<string, number>) ?? {},
+        get: (p["get"] as Record<string, number>) ?? {},
+        awaitingTeamId: p["toTeamId"] as string,
+        state: "open",
+        rounds: 0,
+        note: p["note"] as string | undefined,
+      };
+      break;
+    }
+    /* A counter rewrites the terms and hands the decision back. */
+    case "trade/counter": {
+      const t = s.trades[p["id"] as string];
+      if (!t || t.state !== "open") break;
+      t.give = (p["give"] as Record<string, number>) ?? t.give;
+      t.get = (p["get"] as Record<string, number>) ?? t.get;
+      t.rounds += 1;
+      t.awaitingTeamId =
+        t.awaitingTeamId === t.fromTeamId ? t.toTeamId : t.fromTeamId;
+      break;
+    }
+    case "trade/accept": {
+      const t = s.trades[p["id"] as string];
+      if (!t || t.state !== "open") break;
+      t.state = "accepted";
+      const from = s.teams[t.fromTeamId];
+      const to = s.teams[t.toTeamId];
+      if (from && to) {
+        for (const [res, amt] of Object.entries(t.give)) {
+          const n = Number(amt) || 0;
+          from.resources[res as ResourceKind] -= n;
+          to.resources[res as ResourceKind] += n;
+        }
+        for (const [res, amt] of Object.entries(t.get)) {
+          const n = Number(amt) || 0;
+          to.resources[res as ResourceKind] -= n;
+          from.resources[res as ResourceKind] += n;
+        }
+      }
+      break;
+    }
+    case "trade/decline": {
+      const t = s.trades[p["id"] as string];
+      if (t) t.state = "declined";
+      break;
+    }
     case "negotiation/open": {
       const rec: NegotiationRecord = {
         id: ev.id,

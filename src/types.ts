@@ -84,6 +84,10 @@ export type EventType =
   | "token/use"
   | "token/refresh"
   | "action/log"
+  | "trade/offer"
+  | "trade/counter"
+  | "trade/accept"
+  | "trade/decline"
   | "negotiation/open"
   | "negotiation/close"
   | "phase/advance"
@@ -125,6 +129,28 @@ export interface ProposalRecord {
   state: "pending" | "approved" | "rejected";
 }
 
+/**
+ * A live trade between two teams.
+ *
+ * "give" and "get" are always written from the point of view of the team that
+ * opened it. A counter swaps who is waiting, not who the fields belong to, so
+ * the numbers never flip meaning halfway through a haggle.
+ */
+export interface TradeOffer {
+  id: string;
+  fromTeamId: string;
+  toTeamId: string;
+  /** What the opener hands over. */
+  give: Partial<Record<ResourceKind, number>>;
+  /** What the opener wants back. */
+  get: Partial<Record<ResourceKind, number>>;
+  /** Whose move it is. */
+  awaitingTeamId: string;
+  state: "open" | "accepted" | "declined";
+  rounds: number;
+  note?: string;
+}
+
 export interface NegotiationRecord {
   id: string;
   openedByTeamId: string;
@@ -159,6 +185,7 @@ export interface DerivedState {
   endgameDrawn: string[];
   /** Teams that have entered the Golden Gate, in the order they did. */
   gateEntered: string[];
+  trades: Record<string, TradeOffer>;
   /** SHA-256 of the facilitator passcode, set at session creation. */
   adminHash?: string;
   /** Last few public notes, for the projector ticker. */

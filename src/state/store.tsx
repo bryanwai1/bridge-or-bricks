@@ -43,6 +43,10 @@ const GAMEPLAY_TYPES = new Set<EventType>([
   "action/log",
   "endgame/draw",
   "endgame/enter",
+  "trade/offer",
+  "trade/counter",
+  "trade/accept",
+  "trade/decline",
 ]);
 
 export function roleCanCommit(role: RoleType): boolean {
