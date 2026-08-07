@@ -15,7 +15,7 @@ import { reduceEvents } from "../state/reduce";
 import { sfx } from "../audio/sfx";
 
 export default function ShareScreen() {
-  const { state, events, resetSession } = useStore();
+  const { state, events, resetSession, openSession } = useStore();
   /* Only meaningful when developing on localhost: without a relay to ask,
      the machine's LAN address has to be typed in by hand. Deployed, the
      origin already works and this stays null. */
@@ -41,14 +41,16 @@ export default function ShareScreen() {
     else downloadReport(c, reduceEvents(evs), evs);
   };
 
-  const endSession = () => {
+  const [jumpCode, setJumpCode] = useState("");
+
+  const newSession = () => {
     if (
       !confirm(
-        "End this session and start a new one?\n\nThe board clears on every device. Nothing is deleted — this session is archived and its report stays downloadable below.",
+        "Start a fresh session?\n\nNothing is lost — this one is archived and stays in the list below. You can reopen it from its code whenever you like.",
       )
     )
       return;
-    sfx.crumble();
+    sfx.round();
     resetSession();
   };
 
@@ -151,9 +153,32 @@ export default function ShareScreen() {
             ⤓ Raw log
           </button>
         </div>
-        <button className="chip home-reset" onClick={endSession}>
-          End session and start a new one
-        </button>
+        <div className="session-actions">
+          <button className="primary" onClick={newSession}>
+            ✦ Start a new session
+          </button>
+          <p className="muted small">
+            Archives this one and opens Setup. Nothing is deleted — it stays in the list
+            below and can be reopened from its code.
+          </p>
+        </div>
+
+        <label className="jump-row">
+          <span className="small">Reopen a session by code</span>
+          <span className="jump-input">
+            <input
+              className="setup-input"
+              placeholder="e.g. 9TXCHB"
+              value={jumpCode}
+              maxLength={12}
+              onChange={(e) => setJumpCode(e.target.value.toUpperCase())}
+              onKeyDown={(e) => e.key === "Enter" && openSession(jumpCode)}
+            />
+            <button className="chip" disabled={!jumpCode.trim()} onClick={() => openSession(jumpCode)}>
+              Open
+            </button>
+          </span>
+        </label>
       </section>
 
       {past.length > 0 && (

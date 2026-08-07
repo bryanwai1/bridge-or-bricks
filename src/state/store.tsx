@@ -16,6 +16,7 @@ import {
   EVENTS_TABLE,
   rotateSessionCode,
   sessionCode,
+  setSessionCode,
   supabase,
 } from "../net/supabase";
 
@@ -79,6 +80,7 @@ interface Store {
   undo: () => void;
   canUndo: boolean;
   resetSession: () => void;
+  openSession: (code: string) => void;
   exportSession: () => void;
   importSession: (file: File) => Promise<void>;
 }
@@ -352,14 +354,33 @@ export function StoreProvider({ children }: { children: ReactNode }) {
    * which is both cheaper than a wide delete and recoverable if somebody
    * clears the wrong table by mistake.
    */
+  /**
+   * Step away from this session and open a fresh one.
+   *
+   * Nothing is destroyed. The current session is indexed so it stays
+   * findable, a new code is taken, and the local cache is cleared so the
+   * Setup screen appears. The old game is still in Postgres and can be
+   * reopened from its code at any time.
+   */
   const resetSession = useCallback(() => {
-    // index this session before the code rotates, so it stays findable
     void archiveSession(codeRef.current, reduceEvents(eventsRef.current), eventsRef.current);
     setEvents([]);
     sessionStorage.removeItem(IDENTITY_KEY);
     localStorage.removeItem(STORAGE_KEY);
     rotateSessionCode();
     location.href = location.pathname;
+  }, []);
+
+  /** Reopen a session that already exists, by its code. */
+  const openSession = useCallback((code: string) => {
+    const clean = code.trim().toUpperCase().replace(/[^A-Z0-9]/g, "");
+    if (!clean) return;
+    // archive whatever is on screen first, so nothing is orphaned
+    void archiveSession(codeRef.current, reduceEvents(eventsRef.current), eventsRef.current);
+    sessionStorage.removeItem(IDENTITY_KEY);
+    localStorage.removeItem(STORAGE_KEY);
+    setSessionCode(clean);
+    location.href = `${location.pathname}?s=${clean}`;
   }, []);
 
   const exportSession = useCallback(() => {
@@ -408,6 +429,7 @@ export function StoreProvider({ children }: { children: ReactNode }) {
     undo,
     canUndo: events.length > 1,
     resetSession,
+    openSession,
     exportSession,
     importSession,
   };
