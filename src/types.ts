@@ -71,6 +71,7 @@ export type EventType =
   | "tile/remove"
   | "tile/disable"
   | "tile/reveal"
+  | "tile/identify"
   | "tile/settle"
   | "wall/place"
   | "wall/remove"

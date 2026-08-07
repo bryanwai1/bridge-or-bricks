@@ -3,7 +3,7 @@ import HexBoard, { type BoardHandle, type BoardSelection } from "../components/H
 import CardReveal, { type RevealOrigin } from "../components/CardReveal";
 import CardRing from "../components/CardRing";
 import { CARDS, CARD_BY_ID, DECKS, type CardDef } from "../data/catalog";
-import { canPlace, deckGate, deckOf, type DeckGate } from "../data/gates";
+import { canPlace, deckGate, deckOf, FACEDOWN_ID, type DeckGate } from "../data/gates";
 import { RULES, canAfford, canMoveTo, costLabel, isActivated, type CostBag } from "../data/rules";
 import { sfx, unlockAudio } from "../audio/sfx";
 import { roleCanCommit, useStore } from "../state/store";
@@ -38,7 +38,8 @@ export default function BoardScreen() {
      states, two of them meaningless, and no way to tell which you were in. */
   const [tool, setTool] = useState<"tap" | "orbit" | "wall" | "move" | "bridge">("tap");
   const wallMode = tool === "wall";
-  const [pickerDeck, setPickerDeck] = useState<CardDef["deck"]>("green");
+  /** Slot whose card is being named after an Explore. */
+  const [identifying, setIdentifying] = useState<string | null>(null);
   const [query, setQuery] = useState("");
   const [reveal, setReveal] = useState<{ cardId: string; slot: string; subtitle: string; origin: RevealOrigin | null } | null>(null);
   const boardRef = useRef<BoardHandle | null>(null);
@@ -327,6 +328,38 @@ export default function BoardScreen() {
     for (const d of DECKS) gates[d.key] = deckGate(state, d.key, sel.slot, teamId);
   }
 
+  /**
+   * Lay a card face-down without anybody knowing what it is.
+   *
+   * Only the deck is recorded. Which card it turns out to be is decided when
+   * somebody explores it and turns the physical card over — that is the fog
+   * of war, and choosing at placement time gave the Cartographer knowledge
+   * nobody at the table should have.
+   */
+  const placeFaceDown = (deck: CardDef["deck"], slot: string) => {
+    if (!turn.ok) {
+      setDenied(turn.reason ?? "Not your turn.");
+      return sfx.denied();
+    }
+    const rule = canPlace(state, { deck }, sel?.slot, teamId, { isFacilitator });
+    if (!rule.ok) {
+      setDenied(rule.reason ?? "That placement is not allowed.");
+      return sfx.denied();
+    }
+    unlockAudio();
+    sfx.place();
+    flash(`Face-down ${deck} card at ${slot}`);
+    appendGroup([
+      { type: "token/use", payload: { teamId } },
+      {
+        type: "tile/place",
+        payload: { slot, cardId: FACEDOWN_ID[deck], teamId, faceDown: true },
+        note: `${team?.config.name ?? "Team"} placed a face-down ${deck} card at ${slot}`,
+      },
+    ]);
+    close();
+  };
+
   const placeCard = (c: CardDef, slot: string) => {
     if (!turn.ok) {
       setDenied(turn.reason ?? "Not your turn.");
@@ -356,21 +389,40 @@ export default function BoardScreen() {
     setReveal({ cardId, slot, subtitle, origin });
   };
 
+  /**
+   * Explore opens the identify picker: the physical card has just been turned
+   * over at the table, and this records which one it was.
+   */
   const explore = (slot: string) => {
-    if (!turn.ok) return sfx.denied();
+    if (!turn.ok) {
+      setDenied(turn.reason ?? "Not your turn.");
+      return sfx.denied();
+    }
     unlockAudio();
-    flash(`Explore at ${slot}`);
-    const cardId = state.tiles[slot]?.cardId;
+    sfx.tap();
+    setIdentifying(slot);
+  };
+
+  /** The card that was underneath. */
+  const identify = (c: CardDef, slot: string) => {
+    unlockAudio();
+    sfx.place();
+    flash(`Explored ${slot} — ${c.title}`);
     appendGroup([
       {
         type: "action/log",
         payload: { action: "explore" },
-        note: `${team?.config.name ?? "Team"}: 🔭 Explore — revealed the card at ${slot}`,
+        note: `${team?.config.name ?? "Team"}: 🔭 Explore at ${slot}`,
       },
       { type: "token/use", payload: { teamId } },
-      { type: "tile/reveal", payload: { slot } },
+      {
+        type: "tile/identify",
+        payload: { slot, cardId: c.id },
+        note: `${team?.config.name ?? "Team"} turned over ${c.title} at ${slot}`,
+      },
     ]);
-    if (cardId) openReveal(cardId, slot, `${team?.config.name ?? "Team"} explored hex ${slot}`);
+    setIdentifying(null);
+    openReveal(c.id, slot, `${team?.config.name ?? "Team"} explored hex ${slot}`);
     close();
   };
 
@@ -401,10 +453,6 @@ export default function BoardScreen() {
   const tileFaceDown = Boolean(tile?.faceDown);
   const tileCard = tile ? CARD_BY_ID[tile.cardId] : undefined;
 
-  const pickerCards = query
-    ? CARDS.filter((c) => c.title.toLowerCase().includes(query.toLowerCase()))
-    : CARDS.filter((c) => c.deck === pickerDeck);
-  const activeDeckColor = DECKS.find((d) => d.key === pickerDeck)?.color ?? "#d9a521";
   const activeCam = CAMERAS.reduce((best, c) => (Math.abs(c.deg - tilt) < Math.abs(best.deg - tilt) ? c : best), CAMERAS[0]);
 
   return (
@@ -711,68 +759,85 @@ export default function BoardScreen() {
         </div>
       )}
 
-      {/* empty hex → the turntable */}
+      {/* empty hex → choose a DECK only; the card stays unknown */}
       {sel?.kind === "slot" && !tile && (
-        <div className="picker-overlay">
+        <div className="picker-overlay deck-only">
           <div className="picker-head">
             <b>⬢ Hex {sel.key}</b>
             <button className="chip" onClick={close}>✕</button>
           </div>
-          <div className="picker-decks">
+
+          <div className="deck-choice">
+            <p className="deck-lead">
+              Lay a card face-down. Nobody learns what it is — including you — until
+              somebody spends an action exploring it.
+            </p>
             {DECKS.map((d) => {
-              const locked = Boolean(gates[d.key]?.locked);
+              const rule = canPlace(state, { deck: d.key }, sel.slot, teamId, { isFacilitator });
               return (
                 <button
                   key={d.key}
-                  className={
-                    (pickerDeck === d.key && !query ? "chip deck active" : "chip deck") +
-                    (locked ? " locked" : "")
-                  }
+                  className={rule.ok ? "deck-btn" : "deck-btn locked"}
                   style={{ "--deck": d.color } as React.CSSProperties}
                   onClick={() => {
-                    sfx.tap();
-                    setPickerDeck(d.key);
-                    setQuery("");
+                    if (!rule.ok) {
+                      setDenied(rule.reason ?? "Locked.");
+                      return sfx.denied();
+                    }
+                    if (d.key === "base") placeCard(CARDS.find((c) => c.deck === "base")!, sel.key);
+                    else placeFaceDown(d.key, sel.key);
                   }}
                 >
-                  <span className="dot" style={{ background: d.color }} />
-                  {locked ? `🔒 ${d.label}` : d.label}
+                  <span className="deck-swatch" style={{ background: d.color }} />
+                  <b>{d.label}</b>
+                  <span className="deck-note">
+                    {rule.ok
+                      ? d.key === "base"
+                        ? "Placed face-up"
+                        : "Face-down 🂠"
+                      : rule.reason}
+                  </span>
                 </button>
               );
             })}
           </div>
-          <input
-            className="card-search"
-            placeholder="🔍 Search card title…"
-            value={query}
-            onChange={(e) => setQuery(e.target.value)}
-          />
-
-          <CardRing
-            cards={pickerCards}
-            deckColor={activeDeckColor}
-            isLocked={(c) => !canPlace(state, c, sel.slot, teamId, { isFacilitator }).ok}
-            onPlace={(c) => placeCard(c, sel.key)}
-          />
 
           {denied && <p className="place-denied">🚫 {denied}</p>}
-
-          {!query && gates[pickerDeck]?.locked ? (
-            <p className="gate-msg center">
-              {gates[pickerDeck]?.reason}
-              {isFacilitator && <span className="muted"> · facilitator may override</span>}
-            </p>
-          ) : (
-            <p className="muted small center">
-              Drag to spin the deck · tap the lit card to place it
-              {query ? "" : pickerDeck === "base" ? " (face-up)" : " (face-down 🂠)"}
-            </p>
-          )}
-
         </div>
       )}
 
-      {/* occupied hex */}
+      {/* explored → name the card that was actually turned over */}
+      {identifying && (() => {
+        const deck = deckOf(state.tiles[identifying]?.cardId ?? "") ?? "green";
+        const list = query.trim()
+          ? CARDS.filter((c) => c.title.toLowerCase().includes(query.trim().toLowerCase()))
+          : CARDS.filter((c) => c.deck === deck);
+        const colour = DECKS.find((d) => d.key === deck)?.color ?? "#d9a521";
+        return (
+          <div className="picker-overlay">
+            <div className="picker-head">
+              <b>🔭 Hex {identifying} — which card?</b>
+              <button className="chip" onClick={() => { setIdentifying(null); setQuery(""); }}>✕</button>
+            </div>
+            <input
+              className="card-search"
+              placeholder="🔍 Search card title…"
+              value={query}
+              onChange={(e) => setQuery(e.target.value)}
+            />
+            <CardRing
+              cards={list}
+              deckColor={colour}
+              isLocked={() => false}
+              onPlace={(c) => { setQuery(""); identify(c, identifying); }}
+            />
+            <p className="muted small">
+              Turn the physical card over and pick the match · spends 1 action
+            </p>
+          </div>
+        );
+      })()}
+
       {sel?.kind === "slot" && tile && (
         <div className="sheet">
           <div className="row spread">

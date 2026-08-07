@@ -16,8 +16,35 @@ export const ORANGE_MIN_DISTANCE = 4; // tiles from base (confirmed)
 export const RED_UNLOCK_AFTER = 4; // Orange cards opened (confirmed)
 export const ENDGAME_UNLOCK_AFTER = 3; // Red cards opened (confirmed)
 
+/**
+ * Placeholders for a card nobody has looked at yet.
+ *
+ * Cards go down face-down and anonymous — the table does not learn what a tile
+ * is until somebody spends an action exploring it, which is the whole point of
+ * the fog of war. The identity is recorded at that moment, matching the
+ * physical card actually turned over at the table.
+ */
+export const FACEDOWN_ID: Record<string, string> = {
+  green: "GREEN-BACK",
+  orange: "ORANGE-BACK",
+  red: "RED-BACK",
+  endgame: "EG-BACK",
+};
+
+const BACK_DECK: Record<string, CardDef["deck"]> = {
+  "GREEN-BACK": "green",
+  "ORANGE-BACK": "orange",
+  "RED-BACK": "red",
+  "EG-BACK": "endgame",
+};
+
+export function isUnidentified(cardId: string): boolean {
+  return cardId in BACK_DECK;
+}
+
 export function deckOf(cardId: string): CardDef["deck"] | undefined {
   if (cardId.startsWith("BASE")) return "base";
+  if (cardId in BACK_DECK) return BACK_DECK[cardId];
   return CARD_BY_ID[cardId]?.deck;
 }
 
@@ -134,7 +161,7 @@ export interface PlaceCheck {
  */
 export function canPlace(
   state: DerivedState,
-  card: CardDef,
+  card: { deck: CardDef["deck"] },
   slot: SlotRef | undefined,
   teamId: string | undefined,
   opts: { isFacilitator?: boolean } = {},

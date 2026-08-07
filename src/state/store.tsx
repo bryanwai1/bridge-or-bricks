@@ -30,6 +30,7 @@ const GAMEPLAY_TYPES = new Set<EventType>([
   "tile/remove",
   "tile/disable",
   "tile/reveal",
+  "tile/identify",
   "wall/place",
   "wall/remove",
   "wall/durability",

@@ -98,6 +98,16 @@ export function applyEvent(st: DerivedState, ev: GameEvent): DerivedState {
       if (t) t.faceDown = false;
       break;
     }
+    /* Explore turns the physical card over, and this records which card it
+       was. Placement no longer knows — that is the fog of war. */
+    case "tile/identify": {
+      const t = s.tiles[p["slot"] as string];
+      if (t) {
+        t.cardId = p["cardId"] as string;
+        t.faceDown = false;
+      }
+      break;
+    }
     case "tile/settle": {
       const t = s.tiles[p["slot"] as string];
       if (t) t.settled = true;
