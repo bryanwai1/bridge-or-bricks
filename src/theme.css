@@ -2061,3 +2061,10 @@ html{background:var(--bg)}
   text-transform:uppercase;
 }
 .jump-input .chip{flex:0 0 auto;padding:0 16px}
+
+.restart-btn{
+  background:linear-gradient(180deg,#7FC98A,#4E8C5A);
+  color:#0c1a10;
+  font-weight:700;
+}
+.session-actions + .session-actions{margin-top:10px;padding-top:10px;border-top:1px solid var(--line)}

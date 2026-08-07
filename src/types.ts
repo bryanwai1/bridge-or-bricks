@@ -66,6 +66,7 @@ export interface WallState {
 
 export type EventType =
   | "session/create"
+  | "session/restart"
   | "team/join"
   | "tile/place"
   | "tile/remove"

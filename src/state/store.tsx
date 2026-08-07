@@ -44,6 +44,7 @@ const GAMEPLAY_TYPES = new Set<EventType>([
   "action/log",
   "endgame/draw",
   "endgame/enter",
+  "session/restart",
   "trade/offer",
   "trade/counter",
   "trade/accept",

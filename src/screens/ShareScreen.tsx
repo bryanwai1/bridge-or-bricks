@@ -15,7 +15,7 @@ import { reduceEvents } from "../state/reduce";
 import { sfx } from "../audio/sfx";
 
 export default function ShareScreen() {
-  const { state, events, resetSession, openSession } = useStore();
+  const { state, events, resetSession, openSession, append } = useStore();
   /* Only meaningful when developing on localhost: without a relay to ask,
      the machine's LAN address has to be typed in by hand. Deployed, the
      origin already works and this stays null. */
@@ -42,6 +42,22 @@ export default function ShareScreen() {
   };
 
   const [jumpCode, setJumpCode] = useState("");
+
+  /* Same room, next game. */
+  const restartBoard = () => {
+    if (
+      !confirm(
+        `Reset the board for a new game?\n\nThe map clears and every team goes back to their starting resources — but the ${state.teamOrder.length} teams, their players and their PINs all stay. Nobody has to rescan.\n\nThe game you just played stays in the log and the report still includes it.`,
+      )
+    )
+      return;
+    sfx.round();
+    append(
+      "session/restart",
+      {},
+      { note: `🔄 Board reset — same teams, new game` },
+    );
+  };
 
   const newSession = () => {
     if (
@@ -154,8 +170,18 @@ export default function ShareScreen() {
           </button>
         </div>
         <div className="session-actions">
-          <button className="primary" onClick={newSession}>
-            ✦ Start a new session
+          <button className="primary restart-btn" onClick={restartBoard}>
+            🔄 New game — same teams
+          </button>
+          <p className="muted small">
+            Clears the map and resets every team's resources. Players stay joined, PINs and
+            QR codes keep working. Use this between rounds of the same workshop.
+          </p>
+        </div>
+
+        <div className="session-actions">
+          <button className="chip" onClick={newSession}>
+            ✦ Start a new session — new teams
           </button>
           <p className="muted small">
             Archives this one and opens Setup. Nothing is deleted — it stays in the list

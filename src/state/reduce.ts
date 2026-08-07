@@ -66,6 +66,37 @@ export function applyEvent(st: DerivedState, ev: GameEvent): DerivedState {
       if (p["adminHash"]) s.adminHash = p["adminHash"] as string;
       break;
     }
+    /**
+     * Same teams, same people, empty board.
+     *
+     * A workshop plays several games back to back with the same room. Making
+     * a new session for each one would mean re-entering every team and
+     * everybody rescanning their QR — so this wipes the world and the
+     * economy but keeps the roster, the PINs and the session code intact.
+     * Phones stay connected right through it.
+     */
+    case "session/restart": {
+      s.tiles = {};
+      s.walls = {};
+      s.bridges = {};
+      s.proposals = {};
+      s.trades = {};
+      s.negotiations = {};
+      s.endgameDrawn = [];
+      s.gateEntered = [];
+      s.turnOrder = [];
+      s.activeTurnIndex = 0;
+      s.round = 0;
+      s.phase = "planning";
+      for (const tid of s.teamOrder) {
+        const team = s.teams[tid];
+        if (!team) continue;
+        team.resources = { ...RULES.startingResources };
+        team.actionTokens = { available: ACTION_TOKENS_PER_TURN, used: 0 };
+        team.characterAt = undefined;
+      }
+      break;
+    }
     case "team/join": {
       const team = s.teams[p["teamId"] as string];
       if (!team) break;
